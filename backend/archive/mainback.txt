@@ -1,0 +1,161 @@
+package archive
+
+import (
+	"context"
+	"fmt"
+	"gokafka/internal/consumer"
+	"gokafka/internal/producer"
+	"gokafka/internal/shared"
+	"gokafka/internal/topics"
+	"math/rand/v2"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
+
+	"github.com/segmentio/kafka-go"
+)
+
+func main() {
+	fmt.Println("hello")
+
+	SIGINT := syscall.SIGINT
+	SIGTERM := syscall.SIGTERM
+
+	ctx, cancel := signal.NotifyContext(context.Background(), SIGINT, SIGTERM)
+	defer cancel()
+
+	actionCh := make(chan shared.CommittedEvent, 200)
+
+	topic := shared.Topic{
+		Name:       "thefourth-topic",
+		Partitions: 12,
+		Replicas:   1,
+	}
+
+	brokers := []string{"localhost:9092"}
+
+	conn, err := kafka.Dial("tcp", brokers[0])
+	if err != nil {
+		panic(err.Error())
+	}
+
+	topics.DeleteTopic(topic, conn)
+	topics.CreateTopic(topic, conn)
+
+	groupMaterializer := "group-materializer"
+	groupRtEvents := "group-rt-events"
+
+	producer := producer.NewKafkaProducer(brokers, topic, conn)
+	//consumerA := consumer.NewKafkaConsumer(topic, groupMaterializer, conn, brokers)
+	//consumerB := consumer.NewKafkaConsumer(topic, groupRtEvents, conn, brokers)
+	//consumerC := consumer.NewKafkaConsumer(topic, groupRtEvents, conn, brokers)
+
+	consumersByGroupID := map[string][]*consumer.KafkaConsumer{
+		groupMaterializer: {
+			consumer.NewKafkaConsumer(topic, groupMaterializer, conn, brokers),
+			consumer.NewKafkaConsumer(topic, groupMaterializer, conn, brokers),
+			consumer.NewKafkaConsumer(topic, groupMaterializer, conn, brokers),
+			consumer.NewKafkaConsumer(topic, groupMaterializer, conn, brokers),
+		},
+		groupRtEvents: {
+			consumer.NewKafkaConsumer(topic, groupRtEvents, conn, brokers),
+			consumer.NewKafkaConsumer(topic, groupRtEvents, conn, brokers),
+			consumer.NewKafkaConsumer(topic, groupRtEvents, conn, brokers),
+			consumer.NewKafkaConsumer(topic, groupRtEvents, conn, brokers),
+		},
+	}
+
+	defer producer.Close()
+	defer conn.Close()
+
+	wsIds := []string{"ws-1", "ws-2", "ws-3", "ws-4", "ws-5", "ws-6", "ws-7", "ws-8", "ws-9", "ws-10"}
+	keys := make([]shared.PartitionKey, 0, len(wsIds))
+	for _, wsID := range wsIds {
+		keys = append(keys, shared.NewWorkspaceEventPartitionKey(wsID))
+	}
+
+	orderCount := 10
+	//messages := make([]shared.Message, 0, len(keys)*orderCount)
+
+	actionKeys := []shared.ActionKey{shared.ActionKeyOrderCreated, shared.ActionKeyOrderUpdated, shared.ActionKeyOrderDeleted}
+
+	events := make([]shared.Event, 0, len(keys)*orderCount)
+	for _, key := range keys {
+		for i := range orderCount {
+			var actionKey shared.ActionKey
+			actionKey = actionKeys[i%len(actionKeys)]
+			//actionKey := shared.ActionKeyOrderCreated
+			event := shared.NewEvent(actionKey, key, []byte(fmt.Sprintf("order %d created for workspace %s", i, key.ID())))
+			events = append(events, event)
+		}
+	}
+
+	totalConsumers := 0
+	for _, consumers := range consumersByGroupID {
+		totalConsumers += len(consumers)
+	}
+	errCh := make(chan error, totalConsumers)
+
+	var wg sync.WaitGroup
+	//wg.Add(2)
+	for _, consumers := range consumersByGroupID {
+		for _, c := range consumers {
+			wg.Add(1)
+			go func(c *consumer.KafkaConsumer) {
+				defer wg.Done()
+				errCh <- c.Run(ctx, actionCh)
+				if err := c.Close(); err != nil {
+					fmt.Println("failed to close consumer:", err)
+				}
+			}(c)
+		}
+	}
+
+	go func() {
+		wg.Wait()
+
+		close(actionCh)
+	}()
+
+	go func() {
+		for _, evt := range events {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Duration(rand.IntN(300)) * time.Millisecond):
+				if err := producer.WriteMessage(ctx, evt); err != nil {
+					fmt.Println("failed to write message:", err)
+				}
+			}
+		}
+	}()
+
+	var printWg sync.WaitGroup
+	printWg.Add(1)
+	go func() {
+		defer printWg.Done()
+		/*for msg := range msgCh {
+			fmt.Printf("message at topic/partition/offset/consumerID %s/%d/%d/%s: %s:%s\n", msg.Message.Topic, msg.Message.Partition, msg.Message.Offset, msg.ConsumerGroup, string(msg.Message.Key), string(msg.Message.Value))
+		}*/
+		for evt := range actionCh {
+			fmt.Printf("processed by consumer group %s event with action key %s for workspace %s with key %s\n", evt.ConsumerGroup, evt.Event.ActionKey, evt.Event.PartitionKey.ID(), evt.Event.PartitionKey.String())
+			//fmt.Printf("processed event with action key %s for workspace %s with key %s\n", evt.Event.ActionKey, evt.Event.PartitionKey.ID(), evt.Event.PartitionKey.String())
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		fmt.Println("shutdown signal received")
+	case err := <-errCh:
+		if err != nil {
+			fmt.Println("consumer error:", err)
+		}
+		cancel() // in caso di errore di un consumer, si cancella il context per fermare tutto
+	}
+
+	printWg.Wait()
+
+	fmt.Println("application has shut down gracefully")
+
+}
