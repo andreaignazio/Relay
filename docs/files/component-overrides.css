@@ -1,0 +1,246 @@
+/* =============================================================================
+   Relay — shadcn component overrides
+   
+   This file documents the specific changes to make in each shadcn component
+   after running `npx shadcn@latest add <component>`.
+   
+   The components live in your project at src/components/ui/*.tsx.
+   Since shadcn copies the source code, you edit them directly.
+   
+   Strategy:
+   - globals.css handles 70% (colors, fonts via CSS variables)
+   - tailwind.config.ts handles 20% (font family, scale, spacing)
+   - This file handles the remaining 10% (component-specific density tweaks)
+   ============================================================================= */
+
+
+/* =============================================================================
+   BUTTON — src/components/ui/button.tsx
+   
+   Change the size variants to be more compact:
+   
+   const buttonVariants = cva(
+     // base classes — change text-sm to text-sm (already 12px in our scale)
+     "inline-flex items-center justify-center whitespace-nowrap rounded-md 
+      text-sm font-medium ring-offset-background transition-colors 
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
+      disabled:pointer-events-none disabled:opacity-50",
+     {
+       variants: {
+         size: {
+           default: "h-8 px-3 py-1.5",        // was h-10 px-4 py-2
+           sm:      "h-7 px-2.5 text-xs",      // was h-9 rounded-md px-3
+           lg:      "h-9 px-4",                 // was h-11 rounded-md px-8
+           icon:    "h-8 w-8",                  // was h-10 w-10
+         },
+       },
+     }
+   )
+   ============================================================================= */
+
+
+/* =============================================================================
+   INPUT — src/components/ui/input.tsx
+   
+   Change the className:
+   
+   className={cn(
+     "flex h-8 w-full rounded-md border border-input bg-background px-2.5 py-1.5 
+      text-sm ring-offset-background 
+      file:border-0 file:bg-transparent file:text-sm file:font-medium 
+      placeholder:text-muted-foreground 
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
+      disabled:cursor-not-allowed disabled:opacity-50",
+     className
+   )}
+   
+   Changes: h-10 → h-8, px-3 → px-2.5, py-2 → py-1.5
+   ============================================================================= */
+
+
+/* =============================================================================
+   TEXTAREA — src/components/ui/textarea.tsx
+   
+   className={cn(
+     "flex min-h-[64px] w-full rounded-md border border-input bg-background 
+      px-2.5 py-1.5 text-sm ring-offset-background 
+      placeholder:text-muted-foreground 
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring 
+      disabled:cursor-not-allowed disabled:opacity-50",
+     className
+   )}
+   
+   Changes: min-h-[80px] → min-h-[64px], px-3 → px-2.5, py-2 → py-1.5
+   ============================================================================= */
+
+
+/* =============================================================================
+   DROPDOWN MENU — src/components/ui/dropdown-menu.tsx
+   
+   DropdownMenuContent:
+     "z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 
+      text-popover-foreground shadow-md ..."
+     Changes: p-1 (was p-1, keep), rounded-md (was rounded-md, keep)
+   
+   DropdownMenuItem:
+     "relative flex cursor-default select-none items-center rounded-sm 
+      px-2 py-1.5 text-sm outline-none ..."
+     Changes: py-1.5 (already compact), text-sm stays (now 12px via our scale)
+   
+   This component is mostly fine with just the variable overrides.
+   ============================================================================= */
+
+
+/* =============================================================================
+   DIALOG — src/components/ui/dialog.tsx
+   
+   DialogContent:
+     Add bg-card instead of bg-background for the raised panel look:
+     "... bg-card border shadow-lg ..."
+   
+   DialogHeader:
+     "flex flex-col space-y-1 text-center sm:text-left"
+     Changes: space-y-1.5 → space-y-1 (tighter)
+   
+   DialogTitle:
+     "text-lg font-medium leading-none tracking-tight"
+     Changes: font-semibold → font-medium (we use 400/500 only)
+   ============================================================================= */
+
+
+/* =============================================================================
+   TOOLTIP — src/components/ui/tooltip.tsx
+   
+   TooltipContent:
+     "z-50 overflow-hidden rounded-sm bg-muted px-2.5 py-1 text-xs 
+      text-muted-foreground animate-in fade-in-0 zoom-in-95 ..."
+     Changes: 
+       rounded-md → rounded-sm (2px)
+       bg-primary text-primary-foreground → bg-muted text-muted-foreground
+       px-3 py-1.5 → px-2.5 py-1
+       text-sm → text-xs
+   ============================================================================= */
+
+
+/* =============================================================================
+   COMMAND (cmd+k palette) — src/components/ui/command.tsx
+   
+   This component works great as-is with our variable overrides!
+   The only optional tweak:
+   
+   CommandInput:
+     "flex h-9 w-full rounded-md bg-transparent py-2 text-sm ..."
+     Changes: h-11 → h-9, py-3 → py-2 (slightly more compact)
+   
+   CommandItem:
+     "... px-2 py-1.5 text-sm ..."
+     Already compact enough.
+   ============================================================================= */
+
+
+/* =============================================================================
+   SCROLL AREA — src/components/ui/scroll-area.tsx
+   
+   ScrollBar:
+     Change the width for a thinner track:
+     "flex touch-none select-none transition-colors",
+     orientation === "vertical" && "h-full w-1 border-l ...",
+     // was w-2.5
+   
+   ScrollBarThumb:
+     "relative flex-1 rounded-full bg-border"
+     // bg-border picks up our #30363d — works perfectly
+   ============================================================================= */
+
+
+/* =============================================================================
+   AVATAR — src/components/ui/avatar.tsx
+   
+   Works as-is. Our custom avatar style uses:
+   - rounded-md (4px square, not circular) for the dev-tool look
+   - 28x28px size for messages (smaller than shadcn default)
+   
+   Example usage:
+   <Avatar className="h-7 w-7 rounded-md">
+     <AvatarFallback className="rounded-md bg-relay-accent-blue/10 
+       text-relay-accent-blue text-xs font-medium">
+       MR
+     </AvatarFallback>
+   </Avatar>
+   ============================================================================= */
+
+
+/* =============================================================================
+   BADGE — src/components/ui/badge.tsx
+   
+   Works as-is. For Relay-specific badges, add custom variants:
+   
+   const badgeVariants = cva(
+     "inline-flex items-center rounded-sm border font-medium transition-colors ...",
+     {
+       variants: {
+         variant: {
+           // ... existing variants ...
+           unread: 
+             "border-transparent bg-destructive/15 text-destructive 
+              text-[10px] px-1.5 py-0",
+           thread:
+             "border-amber-500/25 bg-transparent text-amber-400 
+              text-[11px] px-1.5 py-0",
+           online:
+             "border-transparent bg-green-500/10 text-green-400 
+              text-[11px] px-1.5 py-0",
+         },
+       },
+     }
+   )
+   ============================================================================= */
+
+
+/* =============================================================================
+   SEPARATOR — src/components/ui/separator.tsx
+   
+   Works perfectly as-is. Our --border variable (#30363d) gives the right color.
+   ============================================================================= */
+
+
+/* =============================================================================
+   POPOVER — src/components/ui/popover.tsx
+   
+   Works as-is with variable overrides. bg-popover picks up #161b22.
+   ============================================================================= */
+
+
+/* =============================================================================
+   CONTEXT MENU — src/components/ui/context-menu.tsx
+   
+   Same structure as DropdownMenu — works as-is with variable overrides.
+   ============================================================================= */
+
+
+/* =============================================================================
+   SKELETON — src/components/ui/skeleton.tsx
+   
+   Works as-is. The default bg-muted picks up #161b22, which is subtle 
+   enough on our #0d1117 surface.
+   ============================================================================= */
+
+
+/* =============================================================================
+   COMPONENTS TO INSTALL (recommended for Relay MVP)
+   
+   npx shadcn@latest add button
+   npx shadcn@latest add input
+   npx shadcn@latest add textarea
+   npx shadcn@latest add dropdown-menu
+   npx shadcn@latest add dialog
+   npx shadcn@latest add tooltip
+   npx shadcn@latest add command        # for Cmd+K palette
+   npx shadcn@latest add scroll-area
+   npx shadcn@latest add avatar
+   npx shadcn@latest add badge
+   npx shadcn@latest add separator
+   npx shadcn@latest add popover
+   npx shadcn@latest add context-menu
+   npx shadcn@latest add skeleton
+   ============================================================================= */

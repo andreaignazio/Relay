@@ -1,0 +1,11 @@
+DROP TABLE IF EXISTS invite_snapshots;
+DROP TABLE IF EXISTS notification_snapshots;
+DROP TABLE IF EXISTS attachment_snapshots;
+DROP TABLE IF EXISTS reaction_snapshots;
+DROP TABLE IF EXISTS message_snapshots;
+DROP TABLE IF EXISTS channel_membership_snapshots;
+DROP TABLE IF EXISTS channel_snapshots;
+DROP TABLE IF EXISTS workspace_membership_snapshots;
+DROP TABLE IF EXISTS workspace_snapshots;
+DROP TABLE IF EXISTS user_snapshots;
+DROP TABLE IF EXISTS event_stores;

@@ -2,59 +2,40 @@ package shared
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/google/uuid"
 )
 
-type KafkaDomainMessage interface {
-	Bytes() []byte
-	//FromBytes(data []byte) error
+type KafkaWritable interface {
+	Bytes() ([]byte, error)
 	GetPartitionKey() PartitionKey
+}
+
+type KafkaDomainMessage interface {
+	KafkaWritable
 	GetActionKey() ActionKey
+	GetAggregateID() uuid.UUID
+	GetMessageID() uuid.UUID
 }
 
 type Event struct {
-	EventID      uuid.UUID
-	ActionKey    ActionKey
-	PartitionKey EventPartitionKey
-	Payload      interface{}
+	MessageID    uuid.UUID         `json:"MessageID"`
+	AggregateID  uuid.UUID         `json:"AggregateID"`
+	ActionKey    ActionKey         `json:"ActionKey"`
+	PartitionKey EventPartitionKey `json:"-"`
+	Payload      json.RawMessage   `json:"Payload,omitempty"`
 }
 
-type EventJSON struct {
-	EventID      uuid.UUID   `json:"EventID"`
-	ActionKey    ActionKey   `json:"ActionKey"`
-	PartitionKey string      `json:"PartitionKey"`
-	Payload      interface{} `json:"Payload"`
+func (e Event) Bytes() ([]byte, error) {
+	return json.Marshal(e)
 }
 
-func (e Event) Bytes() []byte {
-	jsonEvent, err := MapEventToJSON(e)
-	if err != nil {
-		panic(err.Error())
+func EventFromBytes(data []byte) (Event, error) {
+	var event Event
+	if err := json.Unmarshal(data, &event); err != nil {
+		return Event{}, err
 	}
-	eventJson, err := json.Marshal(jsonEvent)
-	if err != nil {
-		panic(err.Error())
-	}
-	return eventJson
-}
-
-func (e *Event) FromBytes(data []byte) error {
-	var aux EventJSON
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-	e.EventID = aux.EventID
-	e.ActionKey = aux.ActionKey
-
-	pk, ok := ParsePartitionKey(aux.PartitionKey).(EventPartitionKey)
-	if !ok {
-		return fmt.Errorf("unexpected partition key")
-	}
-	e.PartitionKey = pk
-	e.Payload = aux.Payload
-	return nil
+	return event, nil
 }
 
 func (e Event) GetPartitionKey() PartitionKey {
@@ -65,73 +46,55 @@ func (e Event) GetActionKey() ActionKey {
 	return e.ActionKey
 }
 
-func NewEvent(actionKey ActionKey, partitionKey EventPartitionKey, payload interface{}) Event {
+func (e Event) GetAggregateID() uuid.UUID {
+	return e.AggregateID
+}
+
+func (e Event) GetMessageID() uuid.UUID {
+	return e.MessageID
+}
+
+func NewEvent(
+	messageID uuid.UUID,
+	aggregateID uuid.UUID,
+	actionKey ActionKey,
+	partitionKey EventPartitionKey,
+	payload json.RawMessage,
+) Event {
 	return Event{
-		EventID:      uuid.New(),
+		MessageID:    messageID,
+		AggregateID:  aggregateID,
 		ActionKey:    actionKey,
 		PartitionKey: partitionKey,
 		Payload:      payload,
 	}
 }
 
-func MapEventToJSON(e Event) (EventJSON, error) {
-	return EventJSON{
-		EventID:      e.EventID,
-		ActionKey:    e.ActionKey,
-		PartitionKey: e.PartitionKey.String(),
-		Payload:      e.Payload,
-	}, nil
-}
-
 type Command struct {
-	CommandID    uuid.UUID
-	ActionKey    ActionKey
-	PartitionKey CommandPartitionKey
-	Payload      interface{}
+	MessageID    uuid.UUID           `json:"MessageID"`
+	AggregateID  uuid.UUID           `json:"AggregateID"`
+	ActionKey    ActionKey           `json:"ActionKey"`
+	PartitionKey CommandPartitionKey `json:"-"`
+	TraceID      uuid.UUID           `json:"TraceID"`
+	Metadata     MessageMetadata     `json:"Metadata"`
+	Payload      json.RawMessage     `json:"Payload"`
 }
 
-type CommandJSON struct {
-	CommandID    uuid.UUID   `json:"CommandID"`
-	ActionKey    ActionKey   `json:"ActionKey"`
-	PartitionKey string      `json:"PartitionKey"`
-	Payload      interface{} `json:"Payload"`
+type MessageMetadata struct {
+	UserID string         `json:"UserID"`
+	Extra  map[string]any `json:"Extra,omitempty"`
 }
 
-func (c Command) Bytes() []byte {
-	jsonCommand, err := MapCommandToJSON(c)
-	if err != nil {
-		panic(err.Error())
-	}
-	commandJson, err := json.Marshal(jsonCommand)
-	if err != nil {
-		panic(err.Error())
-	}
-	return commandJson
+func (c Command) Bytes() ([]byte, error) {
+	return json.Marshal(c)
 }
 
-func (c *Command) FromBytes(data []byte) error {
-	var aux CommandJSON
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
+func CommandFromBytes(data []byte) (Command, error) {
+	var cmd Command
+	if err := json.Unmarshal(data, &cmd); err != nil {
+		return Command{}, err
 	}
-	c.CommandID = aux.CommandID
-	c.ActionKey = aux.ActionKey
-	pk, ok := ParsePartitionKey(aux.PartitionKey).(CommandPartitionKey)
-	if !ok {
-		return fmt.Errorf("unexpected partition key")
-	}
-	c.PartitionKey = pk
-	c.Payload = aux.Payload
-	return nil
-}
-
-func MapCommandToJSON(c Command) (CommandJSON, error) {
-	return CommandJSON{
-		CommandID:    c.CommandID,
-		ActionKey:    c.ActionKey,
-		PartitionKey: c.PartitionKey.String(),
-		Payload:      c.Payload,
-	}, nil
+	return cmd, nil
 }
 
 func (c Command) GetPartitionKey() PartitionKey {
@@ -142,11 +105,28 @@ func (c Command) GetActionKey() ActionKey {
 	return c.ActionKey
 }
 
-func NewCommand(actionKey ActionKey, partitionKey CommandPartitionKey, payload interface{}) Command {
+func (c Command) GetAggregateID() uuid.UUID {
+	return c.AggregateID
+}
+
+func (c Command) GetMessageID() uuid.UUID {
+	return c.MessageID
+}
+
+func NewCommand(
+	aggregateID uuid.UUID,
+	actionKey ActionKey,
+	partitionKey CommandPartitionKey,
+	traceID uuid.UUID,
+	metadata MessageMetadata,
+	payload json.RawMessage) Command {
 	return Command{
-		CommandID:    uuid.New(),
+		MessageID:    uuid.New(),
+		AggregateID:  aggregateID,
 		ActionKey:    actionKey,
 		PartitionKey: partitionKey,
+		TraceID:      traceID,
+		Metadata:     metadata,
 		Payload:      payload,
 	}
 }

@@ -28,12 +28,17 @@ func NewKafkaProducer(topic shared.Topic, conn *kafkaconn.KafkaConn) *KafkaProdu
 	}
 }
 
-func (kp *KafkaProducer) WriteMessage(ctx context.Context, event shared.KafkaDomainMessage) error {
+func (kp *KafkaProducer) WriteMessage(ctx context.Context, event shared.KafkaWritable) error {
 
 	messages := make([]kafka.Message, 0, 1)
+	payload, err := event.Bytes()
+	if err != nil {
+		return err
+	}
+
 	messages = append(messages, kafka.Message{
 		Key:   event.GetPartitionKey().Bytes(),
-		Value: event.Bytes(),
+		Value: payload,
 	})
 
 	if err := kp.Writer.WriteMessages(ctx, messages...); err != nil {

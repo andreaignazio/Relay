@@ -32,8 +32,9 @@ func (cr *CommandRouter) RouteCommand(ctx context.Context, command shared.Comman
 
 func (cr CommandRouter) HandleMessage(ctx context.Context, message kafka.Message) error {
 	value := message.Value
-	var command shared.Command
-	if err := command.FromBytes(value); err != nil {
+	//var command shared.Command
+	command, err := shared.CommandFromBytes(value)
+	if err != nil {
 		return err
 	}
 	return cr.RouteCommand(ctx, command)

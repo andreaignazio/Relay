@@ -32,8 +32,8 @@ func (er *EventRouter) RouteEvent(ctx context.Context, event shared.Event) error
 
 func (er EventRouter) HandleMessage(ctx context.Context, message kafka.Message) error {
 	value := message.Value
-	var event shared.Event
-	if err := event.FromBytes(value); err != nil {
+	event, err := shared.EventFromBytes(value)
+	if err != nil {
 		return err
 	}
 	return er.RouteEvent(ctx, event)

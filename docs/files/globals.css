@@ -1,0 +1,289 @@
+/* =============================================================================
+   Relay — globals.css
+   Design system: dev-tool aesthetic, dark-first, monospace-native
+   
+   Drop-in replacement for shadcn's default globals.css.
+   Requires: shadcn/ui installed, Tailwind CSS v4 or v3 with CSS variables.
+   ============================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+
+/* -----------------------------------------------------------------------------
+   Base layer — shadcn CSS variable overrides
+   shadcn expects raw HSL channel values (no hsl() wrapper).
+   Format: H S% L%
+   ----------------------------------------------------------------------------- */
+
+@layer base {
+  /* 
+   * Relay is dark-only by design.
+   * The :root block IS the dark theme — no light mode toggle needed.
+   * If you add light mode later, move these into .dark {} and add a :root {} light set.
+   */
+  :root {
+    /* --- Backgrounds -------------------------------------------------------- */
+    --background:          216 28% 4%;     /* #010409 — deepest base */
+    --foreground:          210 17% 91%;    /* #e6edf3 — primary text */
+
+    --card:                215 19% 7%;     /* #0d1117 — surface / panels */
+    --card-foreground:     210 17% 91%;    /* #e6edf3 */
+
+    --popover:             215 14% 11%;    /* #161b22 — raised overlays */
+    --popover-foreground:  210 17% 91%;    /* #e6edf3 */
+
+    --muted:               215 14% 11%;    /* #161b22 — muted surfaces */
+    --muted-foreground:    215 9% 55%;     /* #8b949e — secondary text */
+
+    --accent:              215 14% 14%;    /* #21262d — hover / active bg */
+    --accent-foreground:   210 17% 91%;    /* #e6edf3 */
+
+    /* --- Semantic colors ---------------------------------------------------- */
+    --primary:             212 92% 67%;    /* #58a6ff — links, focus, accents */
+    --primary-foreground:  216 28% 4%;     /* #010409 — text on primary bg */
+
+    --secondary:           215 14% 11%;    /* #161b22 — secondary buttons */
+    --secondary-foreground:210 17% 91%;    /* #e6edf3 */
+
+    --destructive:         356 75% 63%;    /* #f85149 — errors, danger */
+    --destructive-foreground: 0 0% 100%;   /* white on destructive */
+
+    /* --- Borders & rings ---------------------------------------------------- */
+    --border:              215 11% 22%;    /* #30363d — default border */
+    --input:               215 11% 22%;    /* #30363d — input borders */
+    --ring:                212 92% 67%;    /* #58a6ff — focus ring = primary */
+
+    /* --- Radius ------------------------------------------------------------- */
+    --radius:              0.25rem;        /* 4px — tight, dev-tool aesthetic */
+
+    /* --- Chart colors (for shadcn/ui charts if used) ------------------------ */
+    --chart-1:             212 92% 67%;    /* #58a6ff — blue / primary */
+    --chart-2:             140 55% 49%;    /* #3fb950 — green / success */
+    --chart-3:             37 73% 48%;     /* #d29922 — amber / warning */
+    --chart-4:             271 58% 77%;    /* #bc8cff — purple / accent */
+    --chart-5:             356 75% 63%;    /* #f85149 — red / destructive */
+
+    /* --- Relay custom tokens (non-shadcn) ----------------------------------- */
+    /* Use these in your own components alongside shadcn's variables */
+    --relay-bg-base:       #010409;
+    --relay-bg-surface:    #0d1117;
+    --relay-bg-raised:     #161b22;
+    --relay-bg-overlay:    #21262d;
+
+    --relay-text-primary:  #e6edf3;
+    --relay-text-secondary:#c9d1d9;
+    --relay-text-muted:    #8b949e;
+    --relay-text-faint:    #7d8590;
+    --relay-text-ghost:    #484f58;
+
+    --relay-accent-blue:   #58a6ff;
+    --relay-accent-green:  #3fb950;
+    --relay-accent-amber:  #d29922;
+    --relay-accent-red:    #f85149;
+    --relay-accent-purple: #bc8cff;
+
+    --relay-border-subtle: rgba(110, 118, 129, 0.15);
+    --relay-border-default:rgba(110, 118, 129, 0.30);
+    --relay-border-strong: rgba(110, 118, 129, 0.50);
+
+    /* --- Sidebar specific --------------------------------------------------- */
+    --relay-sidebar-width: 232px;
+    --relay-sidebar-bg:    var(--relay-bg-base);
+  }
+
+  /* Global resets that complement shadcn */
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+    font-feature-settings: 'liga' 1, 'calt' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Utility classes — Relay-specific helpers
+   ----------------------------------------------------------------------------- */
+
+@layer utilities {
+  /* Text hierarchy shortcuts */
+  .text-relay-primary   { color: var(--relay-text-primary); }
+  .text-relay-secondary { color: var(--relay-text-secondary); }
+  .text-relay-muted     { color: var(--relay-text-muted); }
+  .text-relay-faint     { color: var(--relay-text-faint); }
+  .text-relay-ghost     { color: var(--relay-text-ghost); }
+
+  /* Section labels — uppercase monospace micro text */
+  .label-section {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--relay-text-ghost);
+  }
+
+  /* Unread badge */
+  .badge-unread {
+    background: rgba(248, 81, 73, 0.15);
+    color: var(--relay-accent-red);
+    font-size: 10px;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 1px 6px;
+  }
+
+  /* Status dots */
+  .dot-online { background-color: var(--relay-accent-green); }
+  .dot-away   { background-color: var(--relay-accent-amber); }
+  .dot-offline{ background-color: var(--relay-text-ghost); }
+
+  /* Inline code in messages (not code blocks) */
+  .inline-code {
+    background: rgba(110, 118, 129, 0.15);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.92em;
+    color: var(--relay-text-primary);
+  }
+
+  /* Thin scrollbar for sidebar and message areas */
+  .scrollbar-relay {
+    scrollbar-width: thin;
+    scrollbar-color: var(--relay-bg-overlay) transparent;
+  }
+  .scrollbar-relay::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-relay::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-relay::-webkit-scrollbar-thumb {
+    background-color: var(--relay-bg-overlay);
+    border-radius: 2px;
+  }
+
+  /* Message hover state */
+  .msg-hover:hover {
+    background-color: rgba(110, 118, 129, 0.04);
+  }
+
+  /* Channel item in sidebar */
+  .channel-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--relay-text-muted);
+    cursor: pointer;
+    transition: background-color 100ms ease;
+  }
+  .channel-item:hover {
+    background-color: rgba(110, 118, 129, 0.08);
+  }
+  .channel-item[data-active="true"] {
+    background-color: rgba(88, 166, 255, 0.08);
+    color: var(--relay-text-primary);
+  }
+  .channel-item[data-unread="true"] {
+    color: var(--relay-text-primary);
+    font-weight: 500;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Syntax highlighting — code blocks in messages
+   GitHub dark-inspired palette, consistent with the design system
+   ----------------------------------------------------------------------------- */
+
+@layer components {
+  .relay-syntax {
+    background: var(--relay-bg-base);
+    border-radius: 4px;
+    padding: 10px 14px;
+    font-size: 12px;
+    line-height: 1.6;
+    border: 0.5px solid var(--relay-border-subtle);
+    overflow-x: auto;
+  }
+
+  .relay-syntax .keyword  { color: #ff7b72; }
+  .relay-syntax .function { color: #d2a8ff; }
+  .relay-syntax .string   { color: #a5d6ff; }
+  .relay-syntax .number   { color: #79c0ff; }
+  .relay-syntax .type     { color: #79c0ff; }
+  .relay-syntax .comment  { color: #484f58; }
+  .relay-syntax .param    { color: #ffa657; }
+  .relay-syntax .operator { color: #ff7b72; }
+  .relay-syntax .punct    { color: #c9d1d9; }
+
+  /* Reactions chip */
+  .relay-reaction {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(110, 118, 129, 0.1);
+    border: 0.5px solid var(--relay-border-subtle);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 11px;
+    color: var(--relay-text-muted);
+    cursor: pointer;
+    transition: border-color 100ms ease;
+  }
+  .relay-reaction:hover {
+    border-color: var(--relay-border-default);
+  }
+  .relay-reaction[data-active="true"] {
+    background: rgba(88, 166, 255, 0.08);
+    border-color: rgba(88, 166, 255, 0.25);
+    color: var(--relay-accent-blue);
+  }
+
+  /* Thread indicator */
+  .relay-thread-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--relay-accent-blue);
+    cursor: pointer;
+  }
+  .relay-thread-link:hover {
+    text-decoration: underline;
+  }
+
+  /* Mention chip */
+  .relay-mention {
+    background: rgba(88, 166, 255, 0.1);
+    border: 0.5px solid rgba(88, 166, 255, 0.25);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 0.92em;
+    color: var(--relay-accent-blue);
+    cursor: pointer;
+  }
+  .relay-mention:hover {
+    background: rgba(88, 166, 255, 0.18);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Keyboard shortcut hints
+   ----------------------------------------------------------------------------- */
+
+@layer components {
+  .relay-kbd {
+    background: rgba(110, 118, 129, 0.1);
+    border: 0.5px solid var(--relay-border-subtle);
+    border-radius: 2px;
+    padding: 0 4px;
+    font-family: inherit;
+    font-size: 10px;
+    color: var(--relay-text-ghost);
+  }
+}

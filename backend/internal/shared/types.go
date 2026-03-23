@@ -27,9 +27,12 @@ type CommittedEvent struct {
 type ConsumerGroupId string
 
 const (
-	CommandConsumerGroupId          ConsumerGroupId = "commands"
-	ViewMaterializerConsumerGroupId ConsumerGroupId = "view-materializer"
-	RealTimeHandlerConsumerGroupId  ConsumerGroupId = "real-time-handler"
+	CommandConsumerGroupId            ConsumerGroupId = "commands"
+	ViewMaterializerConsumerGroupId   ConsumerGroupId = "view-materializer"
+	RealTimeHandlerConsumerGroupId    ConsumerGroupId = "real-time-handler"
+	RealTimeAggregatorConsumerGroupId ConsumerGroupId = "real-time-aggregator"
+	WebSocketClientsConsumerGroupId   ConsumerGroupId = "websocket-clients"
+	WebSocketCommandsConsumerGroupId  ConsumerGroupId = "websocket-commands"
 )
 
 func (cg ConsumerGroupId) String() string {

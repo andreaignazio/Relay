@@ -8,33 +8,27 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func CreateTopic(topic shared.Topic, conn *kafka.Conn) {
-
+func CreateTopic(topic shared.Topic, conn *kafka.Conn) error {
 	controller, err := conn.Controller()
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
-	var controllerConn *kafka.Conn
-	controllerConn, err = kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
+	controllerConn, err := kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 	defer controllerConn.Close()
 
-	topicConfigs := []kafka.TopicConfig{
-		{
-			Topic:             topic.Name,
-			NumPartitions:     topic.Partitions,
-			ReplicationFactor: topic.Replicas,
-		},
+	err = controllerConn.CreateTopics(kafka.TopicConfig{
+		Topic:             topic.Name,
+		NumPartitions:     topic.Partitions,
+		ReplicationFactor: topic.Replicas,
+	})
+	if err == kafka.TopicAlreadyExists {
+		return nil
 	}
-
-	err = controllerConn.CreateTopics(topicConfigs...)
-	if err != nil {
-		panic(err.Error())
-	}
-
+	return err
 }
 
 func DeleteTopic(topic shared.Topic, conn *kafka.Conn) {
