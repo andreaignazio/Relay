@@ -70,7 +70,9 @@ func (h *Handler) HandleHintEvent(ctx context.Context, event shared.Event) (*sha
 func (h *Handler) HandleCreateWorkspaceEvent(ctx context.Context, event shared.Event) error {
 	h.logChan <- fmt.Sprintf("[RTHandler]Handling CreateWorkspace event for workspace ID: %s", event)
 	return h.HandleEvent(ctx, event)
-	//fmt.Println("[RTHandler]Handling CreateWorkspace event for workspace ID:", event.GetPartitionKey())
+}
 
-	return nil
+func (h *Handler) HandleCreateChannelEvent(ctx context.Context, event shared.Event) error {
+	h.logChan <- fmt.Sprintf("[RTHandler]Handling CreateChannel event for channel ID: %s", event)
+	return h.HandleEvent(ctx, event)
 }

@@ -121,6 +121,137 @@ Un utente con il workspace B non aperto deve comunque ricevere badge unread. Sol
 
 ---
 
+## Query `['channels', workspaceId]` — Sidebar canali
+
+### Query richiesta
+
+Tutti i canali di un workspace di cui l'utente è membro (esclusi DM), con dati sufficienti per renderizzare la sidebar: nome, tipo, ruolo, stato archivio.
+
+### Perché solo i canali joined
+
+La sidebar mostra esclusivamente i canali a cui l'utente ha aderito — i canali pubblici non-joined sono visibili solo nella pagina "Browse channels". Questo elimina il problema del fan-out sulla creazione di un canale pubblico: se la tabella fosse user-scoped su tutti i canali visibili, ogni nuovo canale pubblico richiederebbe un INSERT per ogni membro del workspace.
+
+### Due tabelle, due use case
+
+**`channel_membership_view`** — sidebar (user-scoped, joined only)
+
+```sql
+CREATE TABLE channel_membership_views (
+    user_id      UUID        NOT NULL,
+    channel_id   UUID        NOT NULL,
+    workspace_id UUID        NOT NULL,
+    name         TEXT        NOT NULL,
+    type         TEXT        NOT NULL,
+    description  TEXT,
+    topic        TEXT,
+    is_archived  BOOLEAN     NOT NULL DEFAULT FALSE,
+    role         TEXT        NOT NULL,
+    joined_at    TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (user_id, channel_id)
+);
+
+CREATE INDEX idx_channel_membership_views_user_workspace ON channel_membership_views (user_id, workspace_id);
+```
+
+**`channel_views`** — browse pubblico (workspace-scoped, nessuna dimensione utente)
+
+```sql
+CREATE TABLE channel_views (
+    channel_id   UUID        NOT NULL,
+    workspace_id UUID        NOT NULL,
+    created_by   UUID        NOT NULL,
+    name         TEXT        NOT NULL,
+    type         TEXT        NOT NULL,
+    description  TEXT,
+    topic        TEXT,
+    is_archived  BOOLEAN     NOT NULL DEFAULT FALSE,
+    created_at   TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (channel_id)
+);
+
+CREATE INDEX idx_channel_views_workspace_id ON channel_views (workspace_id);
+```
+
+La query browse legge da `channel_views` (una riga per canale, nessun fan-out) e la deduplicazione rispetto ai canali già joined avviene lato frontend o API — è una query rara, il costo è accettabile.
+
+### Fan-out su channel update
+
+`channel:workspace:update` richiede UPDATE su N righe in `channel_membership_views` (una per membro). I canali tendono ad avere meno membri dei workspace, quindi il ragionamento già applicato alla `workspace_views` vale a maggior ragione qui.
+
+### Eventi che aggiornano `channel_membership_views`
+
+| Evento | Operazione |
+|---|---|
+| `channel:workspace:create` | INSERT riga per il creatore |
+| `member:channel:join` | INSERT riga |
+| `member:channel:leave` / `kick` | DELETE riga |
+| `channel:workspace:update` | UPDATE tutte le righe con quel `channel_id` |
+| `channel:workspace:archive` | UPDATE `is_archived` su tutte le righe |
+| `channel:workspace:delete` | DELETE tutte le righe con quel `channel_id` |
+| `member:channel:update_role` | UPDATE `role` sulla riga specifica |
+
+### Eventi che aggiornano `channel_views`
+
+| Evento | Operazione |
+|---|---|
+| `channel:workspace:create` | INSERT riga |
+| `channel:workspace:update` | UPDATE riga |
+| `channel:workspace:archive` | UPDATE `is_archived` |
+| `channel:workspace:delete` | DELETE riga |
+
+---
+
+## Query `['dms', workspaceId]` — Sidebar DM
+
+### Perché una tabella separata
+
+I DM non hanno una query di browse pubblico (sono conversazioni private), quindi non serve la seconda tabella. Non esiste alcuna relazione da mantenere con `channel_views`. Una tabella separata è più semplice e più economica.
+
+### Nessuna denormalizzazione dei partecipanti
+
+Nei DM a più utenti non è possibile denormalizzare i partecipanti in modo sostenibile: ogni cambiamento di display name o avatar di un partecipante richiederebbe un UPDATE su tutte le sue conversazioni DM. La complessità non vale il guadagno.
+
+### Soluzione: query che ritorna tutti i partecipanti
+
+Invece di filtrare `WHERE user_id = ?`, la query ritorna **tutte le righe** dei canali DM di cui l'utente è membro. Il frontend riceve una struttura raggruppabile per `channel_id` e ottiene così la lista completa dei partecipanti per ogni DM.
+
+I profili utente vengono risolti dalla cache Zustand. Se un `user_id` manca in cache, il frontend invalida e fetcha il profilo — pattern già in uso per altri tipi di dati.
+
+### Struttura `dm_membership_views`
+
+```sql
+CREATE TABLE dm_membership_views (
+    user_id      UUID        NOT NULL,
+    channel_id   UUID        NOT NULL,
+    workspace_id UUID        NOT NULL,
+    joined_at    TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (user_id, channel_id)
+);
+
+CREATE INDEX idx_dm_membership_views_user_workspace ON dm_membership_views (user_id, workspace_id);
+```
+
+### Query pattern
+
+```sql
+-- Step 1: trova i channel_id DM dell'utente
+-- Step 2: ritorna tutti i partecipanti di quei canali
+SELECT * FROM dm_membership_views
+WHERE channel_id IN (
+    SELECT channel_id FROM dm_membership_views
+    WHERE user_id = ? AND workspace_id = ?
+);
+```
+
+### Eventi che aggiornano `dm_membership_views`
+
+| Evento | Operazione |
+| --- | --- |
+| `channel:workspace:create` (type=dm) | INSERT riga per ogni partecipante |
+| `member:channel:leave` | DELETE riga |
+
+---
+
 ## Nota implementativa: GORM e primary key composita
 
 Le MV con primary key composita (senza campo `ID`) richiedono tag GORM espliciti. Senza questi tag, GORM non sa dove fare il conflict nell'upsert e il `clause.OnConflict{UpdateAll: true}` fallisce.

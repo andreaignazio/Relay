@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gokafka/internal/eventstorepayloads"
 	"gokafka/internal/models"
+	"gokafka/internal/models/entities"
 	"gokafka/internal/models/materializedviews"
 	"gokafka/internal/shared"
 
@@ -15,13 +16,21 @@ import (
 type Service struct {
 	EventStoreRepo          EventStoreRepo
 	WorkspaceViewRepository WorkspaceViewRepository
+	ChannelViewRepository   ChannelViewRepository
+	tx                      Transactor
 }
 
-func NewService(eventStoreRepo EventStoreRepo, workspaceViewRepo WorkspaceViewRepository) *Service {
+func NewService(eventStoreRepo EventStoreRepo, workspaceViewRepo WorkspaceViewRepository, channelViewRepo ChannelViewRepository, tx Transactor) *Service {
 	return &Service{
 		EventStoreRepo:          eventStoreRepo,
 		WorkspaceViewRepository: workspaceViewRepo,
+		ChannelViewRepository:   channelViewRepo,
+		tx:                      tx,
 	}
+}
+
+type Transactor interface {
+	RunInTransaction(ctx context.Context, fn func(ctx context.Context) error) error
 }
 
 type EventStoreRepo interface {
@@ -30,6 +39,12 @@ type EventStoreRepo interface {
 
 type WorkspaceViewRepository interface {
 	UpsertWorkspaceView(ctx context.Context, view materializedviews.WorkspaceView) error
+}
+
+type ChannelViewRepository interface {
+	UpsertChannelMembershipView(ctx context.Context, view materializedviews.ChannelMembershipView) error
+	UpsertChannelView(ctx context.Context, view materializedviews.ChannelView) error
+	UpsertDirectMessageMembershipView(ctx context.Context, view materializedviews.DirectMessageMembershipView) error
 }
 
 func (s *Service) HandleWorkspaceViewUpdate(ctx context.Context, event shared.Event) error {
@@ -69,5 +84,90 @@ func (s *Service) HandleWorkspaceViewUpdate(ctx context.Context, event shared.Ev
 		// For example, you might insert a new record into a "workspaces_view" table with the workspace details.
 	}
 
+	return nil
+}
+
+func (s *Service) HandleChannelViewUpdate(ctx context.Context, event shared.Event) error {
+
+	switch event.ActionKey {
+	case shared.ActionKeyChannelCreate:
+		messageID := event.GetMessageID()
+		storedEvent, err := s.EventStoreRepo.GetStoredEventByID(ctx, messageID)
+		if err != nil {
+			return fmt.Errorf("failed to get event by ID: %w", err)
+		}
+		var storedPayload eventstorepayloads.ChannelCreatedPayload
+		if err := json.Unmarshal(storedEvent.Payload, &storedPayload); err != nil {
+			return fmt.Errorf("failed to unmarshal event payload: %w", err)
+		}
+
+		switch storedPayload.Channel.Type {
+		case entities.ChannelTypePublic, entities.ChannelTypePrivate:
+
+			channelMembersView := materializedviews.ChannelMembershipView{
+				ChannelID:         storedPayload.Channel.ID,
+				UserID:            storedPayload.Membership.UserID,
+				WorkspaceID:       storedPayload.Channel.WorkspaceID,
+				Name:              storedPayload.Channel.Name,
+				Description:       storedPayload.Channel.Description,
+				Topic:             storedPayload.Channel.Topic,
+				Type:              storedPayload.Channel.Type,
+				IsArchived:        storedPayload.Channel.IsArchived,
+				CreatedBy:         storedPayload.Channel.CreatedBy,
+				Role:              storedPayload.Membership.Role,
+				JoinedAt:          storedPayload.Membership.JoinedAt,
+				NotificationsPref: storedPayload.Membership.NotificationsPref,
+				LastReadAt:        storedPayload.Membership.LastReadAt,
+			}
+
+			channelView := materializedviews.ChannelView{
+				ChannelID:   storedPayload.Channel.ID,
+				WorkspaceID: storedPayload.Channel.WorkspaceID,
+				CreatedBy:   storedPayload.Channel.CreatedBy,
+				Name:        storedPayload.Channel.Name,
+				Description: storedPayload.Channel.Description,
+				Topic:       storedPayload.Channel.Topic,
+				Type:        storedPayload.Channel.Type,
+				IsArchived:  storedPayload.Channel.IsArchived,
+			}
+
+			// Handle standard channel creation event to update the channel view
+			err = s.tx.RunInTransaction(ctx, func(ctx context.Context) error {
+				if err := s.ChannelViewRepository.UpsertChannelMembershipView(ctx, channelMembersView); err != nil {
+					return fmt.Errorf("failed to upsert channel membership view: %w", err)
+				}
+				if err := s.ChannelViewRepository.UpsertChannelView(ctx, channelView); err != nil {
+					return fmt.Errorf("failed to upsert channel view: %w", err)
+				}
+				return nil
+			})
+			if err != nil {
+				return fmt.Errorf("failed to upsert channel views in transaction: %w", err)
+			}
+			return nil
+
+		case entities.ChannelTypeDM:
+			dmMembershipView := materializedviews.DirectMessageMembershipView{
+				ChannelID:         storedPayload.Channel.ID,
+				UserID:            storedPayload.Membership.UserID,
+				WorkspaceID:       storedPayload.Channel.WorkspaceID,
+				JoinedAt:          storedPayload.Membership.JoinedAt,
+				NotificationsPref: storedPayload.Membership.NotificationsPref,
+			}
+
+			// Handle direct message channel creation event to update the direct message membership view
+			if err := s.ChannelViewRepository.UpsertDirectMessageMembershipView(ctx, dmMembershipView); err != nil {
+				return fmt.Errorf("failed to upsert direct message membership view: %w", err)
+			}
+			return nil
+
+		}
+	case shared.ActionKeyChannelUpdate:
+		// Handle channel membership update events to update the channel membership view
+		// Similar to the above, you would read the event payload, extract necessary information,
+		// and then update the "channel_membership_view" table accordingly.
+		fmt.Println("Channel membership update event received. Event handling logic to be implemented.")
+		return nil
+	}
 	return nil
 }

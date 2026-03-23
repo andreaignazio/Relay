@@ -64,6 +64,7 @@ func (c *Client) ReadPump() {
 			c.LogChan <- "Error reading message: " + err.Error()
 			break
 		}
+		c.LogChan <- fmt.Sprintf("[Client ReadPump] Raw message received from client %s: %s", c.ClientID, string(message))
 		if err := c.forwardToAggregator(message); err != nil {
 			c.LogChan <- "Error forwarding message: " + err.Error()
 		}
@@ -88,6 +89,7 @@ func (c *Client) forwardToAggregator(raw []byte) error {
 			UserID:        c.UserID,
 			Subscriptions: p.Subscriptions,
 		}
+		c.LogChan <- fmt.Sprintf("[Client forwardToAggregator] SubscribeCommandPayload: ClientID=%s, UserID=%s, Subscriptions=%v", c.ClientID, c.UserID, p.Subscriptions)
 	case websocketcommands.WsCommandKeyUnsubscribe:
 		var p websocketcommands.FrontendUnsubscribePayload
 		if err := json.Unmarshal(msg.Payload, &p); err != nil {
@@ -98,6 +100,7 @@ func (c *Client) forwardToAggregator(raw []byte) error {
 			UserID:        c.UserID,
 			Subscriptions: p.Subscriptions,
 		}
+		c.LogChan <- fmt.Sprintf("[Client forwardToAggregator] UnsubscribeCommandPayload: ClientID=%s, UserID=%s, Subscriptions=%v", c.ClientID, c.UserID, p.Subscriptions)
 	case websocketcommands.WsCommandKeyFocus:
 		var p websocketcommands.FrontendFocusPayload
 		if err := json.Unmarshal(msg.Payload, &p); err != nil {
@@ -108,6 +111,7 @@ func (c *Client) forwardToAggregator(raw []byte) error {
 			UserID:    c.UserID,
 			ChannelID: p.ChannelID,
 		}
+		c.LogChan <- fmt.Sprintf("[Client forwardToAggregator] FocusCommandPayload: ClientID=%s, UserID=%s, ChannelID=%s", c.ClientID, c.UserID, p.ChannelID)
 	default:
 		c.LogChan <- "Unknown WsCommandKey: " + string(msg.WsCommandKey)
 		return nil

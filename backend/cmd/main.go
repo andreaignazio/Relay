@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gokafka/database"
 	"gokafka/internal/api"
+	"gokafka/internal/commandservices/channels"
 	"gokafka/internal/gormrepo"
 	"gokafka/internal/kafkaclient/consumer"
 	"gokafka/internal/kafkaclient/producer"
@@ -97,22 +98,31 @@ func main() {
 		wsCommandConsumer, conn,
 		logChan, make(chan error, 100), ackChan)
 
-	commandRouter := messagerouter.NewCommandRouter()
-	eventRouter := messagerouter.NewEventRouter()
-	materializerRouter := messagerouter.NewEventRouter()
-
 	eventProducer := producer.NewKafkaProducer(eventsTopic, conn)
 
 	gormRepository := gormrepo.NewRepository(db)
+
+	//Command handlers and services initialization
 	workspaceService := workspaces.NewService(gormRepository, gormRepository, gormRepository, eventProducer, logChan)
-	rtEventsHandler := rteventshandler.NewHandler(logChan, workspaceTopicProducer, channelTopicProducer, userTopicProducer)
-	viewmaterializerService := viewmaterializer.NewService(gormRepository, gormRepository)
+	channelService := channels.NewService(gormRepository, gormRepository, gormRepository, eventProducer, logChan)
 
+	commandRouter := messagerouter.NewCommandRouter()
 	commandRouter.RegisterHandler(shared.ActionKeyWorkspaceCreate, workspaceService.HandleCreateWorkspace)
-	eventRouter.RegisterHandler(shared.ActionKeyWorkspaceCreate, rtEventsHandler.HandleCreateWorkspaceEvent)
+	commandRouter.RegisterHandler(shared.ActionKeyChannelCreate, channelService.HandleCreateChannel)
 
-	//Materializer handlers would be registered here, for example:
+	//Real-time event handlers initialization
+	rtEventsHandler := rteventshandler.NewHandler(logChan, workspaceTopicProducer, channelTopicProducer, userTopicProducer)
+
+	eventRouter := messagerouter.NewEventRouter()
+	eventRouter.RegisterHandler(shared.ActionKeyWorkspaceCreate, rtEventsHandler.HandleCreateWorkspaceEvent)
+	eventRouter.RegisterHandler(shared.ActionKeyChannelCreate, rtEventsHandler.HandleCreateChannelEvent)
+
+	//View materializer handlers initialization
+	viewmaterializerService := viewmaterializer.NewService(gormRepository, gormRepository, gormRepository, gormRepository)
+
+	materializerRouter := messagerouter.NewEventRouter()
 	materializerRouter.RegisterHandler(shared.ActionKeyWorkspaceCreate, viewmaterializerService.HandleWorkspaceViewUpdate)
+	materializerRouter.RegisterHandler(shared.ActionKeyChannelCreate, viewmaterializerService.HandleChannelViewUpdate)
 
 	domainCommandConsumer := consumer.NewKafkaConsumer(domainCommandTopic, shared.CommandConsumerGroupId, conn)
 	viewMaterializerConsumer := consumer.NewKafkaConsumer(eventsTopic, shared.ViewMaterializerConsumerGroupId, conn)

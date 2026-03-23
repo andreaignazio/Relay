@@ -232,6 +232,7 @@ func (wa *WsAggregator) HandleWsCommand(ctx context.Context, msg kafka.Message) 
 		topic := shared.NewWsClientTopic(clientID.String(), 1, 1)
 		wa.ProducerByClient[clientID] = producer.NewKafkaProducer(topic, wa.KafkaConn)
 		wa.sendAck(clientID, websocketcommands.WsCommandKeySubscribe, true, "")
+		wa.LogChan <- fmt.Sprintf("[WSAggregator] Subscribed client %s to topics: %v", clientID, payload.Subscriptions)
 
 	case websocketcommands.WsCommandKeyUnsubscribe:
 		var payload websocketcommands.UnsubscribeCommandPayload

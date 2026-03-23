@@ -34,6 +34,7 @@ func (h *Handler) GetEventRoutes(event shared.Event) []EventRoute {
 			},
 		}
 		routes = append(routes, route)
+
 	case shared.ActionKeyWorkspaceUpdate, shared.ActionKeyWorkspaceDelete,
 		shared.ActionKeyMemberJoin, shared.ActionKeyMemberLeave,
 		shared.ActionKeyMemberUpdateRole:
@@ -63,6 +64,7 @@ func (h *Handler) GetEventRoutes(event shared.Event) []EventRoute {
 			},
 		}
 		routes = append(routes, route)
+
 	case shared.ActionKeyChannelCreate:
 		route := EventRoute{
 			Procucer:     h.WorkspaceTopicProducer,
@@ -72,6 +74,7 @@ func (h *Handler) GetEventRoutes(event shared.Event) []EventRoute {
 			},
 		}
 		routes = append(routes, route)
+
 	case shared.ActionKeyChannelUpdate:
 		route := EventRoute{
 			Procucer:     h.WorkspaceTopicProducer,

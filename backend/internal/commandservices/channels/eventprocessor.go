@@ -121,6 +121,7 @@ func (s *Service) HandleCreateChannel(ctx context.Context, cmd shared.Command) e
 		ChannelID:   channelID,
 		WorkspaceID: workspaceID,
 		UserID:      userID,
+		Type:        entities.ChannelType(payload.Type),
 	}
 	domainPayloadBytes, err := json.Marshal(domainPayload)
 	if err != nil {

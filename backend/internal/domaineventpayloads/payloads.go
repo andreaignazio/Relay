@@ -1,6 +1,10 @@
 package domaineventpayloads
 
-import "github.com/google/uuid"
+import (
+	"gokafka/internal/models/entities"
+
+	"github.com/google/uuid"
+)
 
 type WorkspaceCreatedPayload struct {
 	WorkspaceID uuid.UUID `json:"WorkspaceID"`
@@ -8,7 +12,8 @@ type WorkspaceCreatedPayload struct {
 }
 
 type ChannelCreatedPayload struct {
-	ChannelID   uuid.UUID `json:"ChannelID"`
-	WorkspaceID uuid.UUID `json:"WorkspaceID"`
-	UserID      uuid.UUID `json:"UserID"`
+	ChannelID   uuid.UUID            `json:"ChannelID"`
+	WorkspaceID uuid.UUID            `json:"WorkspaceID"`
+	UserID      uuid.UUID            `json:"UserID"`
+	Type        entities.ChannelType `json:"Type"`
 }
