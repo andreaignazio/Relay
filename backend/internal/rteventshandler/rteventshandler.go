@@ -11,68 +11,66 @@ type Handler struct {
 	WorkspaceTopicProducer *producer.KafkaProducer
 	ChannelTopicProducer   *producer.KafkaProducer
 	UserTopicProducer      *producer.KafkaProducer
+	SnapshotRepo           SnapshotRepo
 	logChan                chan string
-	// Define any dependencies or fields needed for the handler
 }
 
-func NewHandler(logChan chan string, workspaceTopicProducer *producer.KafkaProducer, channelTopicProducer *producer.KafkaProducer, userTopicProducer *producer.KafkaProducer) *Handler {
+func NewHandler(
+	logChan chan string,
+	workspaceTopicProducer *producer.KafkaProducer,
+	channelTopicProducer *producer.KafkaProducer,
+	userTopicProducer *producer.KafkaProducer,
+	snapshotRepo SnapshotRepo,
+) *Handler {
 	return &Handler{
 		logChan:                logChan,
 		WorkspaceTopicProducer: workspaceTopicProducer,
 		ChannelTopicProducer:   channelTopicProducer,
 		UserTopicProducer:      userTopicProducer,
+		SnapshotRepo:           snapshotRepo,
 	}
 }
 
 func (h *Handler) HandleEvent(ctx context.Context, event shared.Event) error {
-	routes := h.GetEventRoutes(event)
+	h.logChan <- fmt.Sprintf("[RTHandler] ActionKey: %s", event.GetActionKey())
+
+	routes, ok := routeTable[event.GetActionKey()]
+	if !ok {
+		h.logChan <- fmt.Sprintf("[RTHandler] no routes for ActionKey: %s", event.GetActionKey())
+		return nil
+	}
+
 	for _, route := range routes {
-		rtEvent, err := route.EventBuilder(ctx, event)
-		if err != nil {
-			return fmt.Errorf("build rt event: %w", err)
+		entityKey, ok := topicToEntity[route.Topic]
+		if !ok {
+			return fmt.Errorf("no entity key for topic: %s", route.Topic)
 		}
-		if rtEvent == nil {
+		partitionID, ok := event.EntityContext[entityKey]
+		if !ok {
+			return fmt.Errorf("EntityContext missing key %s for ActionKey %s", entityKey, event.GetActionKey())
+		}
+
+		payload, err := h.buildPayload(ctx, event, route.EventType)
+		if err != nil {
+			return fmt.Errorf("build payload (%s/%s): %w", route.Topic, route.EventType, err)
+		}
+		if payload == nil {
 			continue
 		}
-		rtEvent.PartitionKey = route.PartionFn(event)
-		if err := route.Procucer.WriteMessage(ctx, *rtEvent); err != nil {
-			return fmt.Errorf("write rt event: %w", err)
+
+		rtEvent := shared.RTEvent{
+			MessageID:    event.GetMessageID(),
+			AggregateID:  event.GetAggregateID(),
+			ActionKey:    event.GetActionKey(),
+			Type:         route.EventType,
+			PartitionKey: partitionKeyForTopic(route.Topic, partitionID),
+			Payload:      payload,
+		}
+
+		if err := h.producerForTopic(route.Topic).WriteMessage(ctx, rtEvent); err != nil {
+			return fmt.Errorf("write rt event (%s): %w", route.Topic, err)
 		}
 	}
+
 	return nil
-}
-
-func (h *Handler) HandleRichEvent(ctx context.Context, event shared.Event) (*shared.RTEvent, error) {
-	//fmt.Println("[RTHandler]Handling rich event with ActionKey:", event.GetActionKey())
-	h.logChan <- fmt.Sprintf("[RTHandler]Handling rich event with ActionKey: %s", event.GetActionKey())
-	return nil, nil
-}
-
-func (h *Handler) HandleInvalidateCacheEvent(ctx context.Context, event shared.Event) (*shared.RTEvent, error) {
-	//fmt.Println("[RTHandler]Handling InvalidateCache event for aggregate ID:", event.GetAggregateID())
-	h.logChan <- fmt.Sprintf("[RTHandler]Handling InvalidateCache event for aggregate ID: %s", event.GetAggregateID())
-	rtEvent := &shared.RTEvent{
-		MessageID:   event.GetMessageID(),
-		AggregateID: event.GetAggregateID(),
-		ActionKey:   event.GetActionKey(),
-		Type:        shared.RTEventTypeInvalidateCache,
-		Payload:     event.Payload,
-	}
-	return rtEvent, nil
-}
-
-func (h *Handler) HandleHintEvent(ctx context.Context, event shared.Event) (*shared.RTEvent, error) {
-	//fmt.Println("[RTHandler]Handling Hint event with ActionKey:", event.GetActionKey())
-	h.logChan <- fmt.Sprintf("[RTHandler]Handling Hint event with ActionKey: %s", event.GetActionKey())
-	return nil, nil
-}
-
-func (h *Handler) HandleCreateWorkspaceEvent(ctx context.Context, event shared.Event) error {
-	h.logChan <- fmt.Sprintf("[RTHandler]Handling CreateWorkspace event for workspace ID: %s", event)
-	return h.HandleEvent(ctx, event)
-}
-
-func (h *Handler) HandleCreateChannelEvent(ctx context.Context, event shared.Event) error {
-	h.logChan <- fmt.Sprintf("[RTHandler]Handling CreateChannel event for channel ID: %s", event)
-	return h.HandleEvent(ctx, event)
 }

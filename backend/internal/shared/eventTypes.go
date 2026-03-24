@@ -19,11 +19,12 @@ type KafkaDomainMessage interface {
 }
 
 type Event struct {
-	MessageID    uuid.UUID         `json:"MessageID"`
-	AggregateID  uuid.UUID         `json:"AggregateID"`
-	ActionKey    ActionKey         `json:"ActionKey"`
-	PartitionKey EventPartitionKey `json:"-"`
-	Payload      json.RawMessage   `json:"Payload,omitempty"`
+	MessageID     uuid.UUID          `json:"MessageID"`
+	AggregateID   uuid.UUID          `json:"AggregateID"`
+	ActionKey     ActionKey          `json:"ActionKey"`
+	PartitionKey  EventPartitionKey  `json:"-"`
+	EntityContext map[EntityKeys]uuid.UUID `json:"EntityContext,omitempty"`
+	Payload       json.RawMessage    `json:"Payload,omitempty"`
 }
 
 func (e Event) Bytes() ([]byte, error) {
@@ -59,14 +60,16 @@ func NewEvent(
 	aggregateID uuid.UUID,
 	actionKey ActionKey,
 	partitionKey EventPartitionKey,
+	entityContext map[EntityKeys]uuid.UUID,
 	payload json.RawMessage,
 ) Event {
 	return Event{
-		MessageID:    messageID,
-		AggregateID:  aggregateID,
-		ActionKey:    actionKey,
-		PartitionKey: partitionKey,
-		Payload:      payload,
+		MessageID:     messageID,
+		AggregateID:   aggregateID,
+		ActionKey:     actionKey,
+		PartitionKey:  partitionKey,
+		EntityContext: entityContext,
+		Payload:       payload,
 	}
 }
 

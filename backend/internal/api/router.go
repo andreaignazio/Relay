@@ -36,6 +36,7 @@ func NewRouter(handler *ApiHandler, reader *ReaderApiHandler, wsHandler *WsHandl
 
 	channels := workspaces.Group("/channels/:channelID")
 	channels.POST("/messages", handler.CreateMessage)
+	//channels.GET("/messages", reader.ListMessages)
 
 	return r
 }

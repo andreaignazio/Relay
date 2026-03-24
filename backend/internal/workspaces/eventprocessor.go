@@ -119,6 +119,10 @@ func (s *Service) HandleCreateWorkspace(ctx context.Context, command shared.Comm
 		workspaceID,
 		command.ActionKey,
 		shared.NewWorkspaceEventPartitionKey(workspaceID.String()),
+		map[shared.EntityKeys]uuid.UUID{
+			shared.EntityKeysWorkspace: workspaceID,
+			shared.EntityKeysUser:      userID,
+		},
 		domainPayloadBytes,
 	)
 

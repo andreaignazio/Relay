@@ -133,6 +133,11 @@ func (s *Service) HandleCreateChannel(ctx context.Context, cmd shared.Command) e
 		workspaceID,
 		cmd.ActionKey,
 		shared.NewWorkspaceEventPartitionKey(workspaceID.String()),
+		map[shared.EntityKeys]uuid.UUID{
+			shared.EntityKeysWorkspace: workspaceID,
+			shared.EntityKeysChannel:   channelID,
+			shared.EntityKeysUser:      userID,
+		},
 		domainPayloadBytes,
 	)
 

@@ -114,11 +114,12 @@ func main() {
 	commandRouter.RegisterHandler(shared.ActionKeyMessageSend, messageService.HandleCreateMessage)
 
 	//Real-time event handlers initialization
-	rtEventsHandler := rteventshandler.NewHandler(logChan, workspaceTopicProducer, channelTopicProducer, userTopicProducer)
+	rtEventsHandler := rteventshandler.NewHandler(logChan, workspaceTopicProducer, channelTopicProducer, userTopicProducer, gormRepository)
 
 	eventRouter := messagerouter.NewEventRouter()
-	eventRouter.RegisterHandler(shared.ActionKeyWorkspaceCreate, rtEventsHandler.HandleCreateWorkspaceEvent)
-	eventRouter.RegisterHandler(shared.ActionKeyChannelCreate, rtEventsHandler.HandleCreateChannelEvent)
+	for _, actionKey := range shared.RegisteredActionKeys() {
+		eventRouter.RegisterHandler(actionKey, rtEventsHandler.HandleEvent)
+	}
 
 	//View materializer handlers initialization
 	viewmaterializerService := viewmaterializer.NewService(gormRepository, gormRepository, gormRepository, gormRepository)

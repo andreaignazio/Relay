@@ -80,6 +80,10 @@ func (r *Repository) GetMessageSnapshot(ctx context.Context, aggregateID uuid.UU
 	return r.db.WithContext(ctx).Where("id = ?", aggregateID).First(snapshot).Error
 }
 
+func (r *Repository) GetUserSnapshot(ctx context.Context, userID uuid.UUID, snapshot *models.UserSnapshot) error {
+	return r.db.WithContext(ctx).Where("id = ?", userID).First(snapshot).Error
+}
+
 func (r *Repository) UpsertMessageSnapshotTX(ctx context.Context, snapshot models.MessageSnapshot) error {
 	return r.dbFromCtx(ctx).Clauses(clause.OnConflict{
 		UpdateAll: true,

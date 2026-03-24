@@ -103,3 +103,28 @@ func (h *ReaderApiHandler) BrowseChannels(c *gin.Context) {
 	}
 	c.JSON(200, BrowseChannelsResponse{Channels: views})
 }
+
+/*func (h *ReaderApiHandler) ListMessages(c *gin.Context) {
+	workspaceID, err := uuid.Parse(c.Param("workspaceID"))
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid workspace ID"})
+		return
+	}
+	channelID, err := uuid.Parse(c.Param("channelID"))
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid channel ID"})
+		return
+	}
+	userID, err := uuid.Parse(c.MustGet("UserID").(string))
+	if err != nil {
+		c.JSON(400, gin.H{"error": "invalid user ID"})
+		return
+	}
+	ctx := c.Request.Context()
+	views, err := h.MaterialedViewRepository.GetUserMessagesViews(ctx, workspaceID, channelID, userID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, ListMessagesResponse{Messages: views})
+}*/

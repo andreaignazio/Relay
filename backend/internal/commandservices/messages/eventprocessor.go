@@ -92,6 +92,11 @@ func (s *Service) HandleCreateMessage(ctx context.Context, cmd shared.Command) e
 		cmd.AggregateID,
 		shared.ActionKeyMessageSend,
 		shared.NewMessageEventPartitionKey(payload.ChannelID.String()),
+		map[shared.EntityKeys]uuid.UUID{
+			shared.EntityKeysWorkspace: payload.WorkspaceID,
+			shared.EntityKeysChannel:   payload.ChannelID,
+			shared.EntityKeysUser:      userID,
+		},
 		domainPayloadBytes)
 	if err := s.ProduceEvent(ctx, domainEvent); err != nil {
 		return err

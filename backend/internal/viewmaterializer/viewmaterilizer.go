@@ -171,3 +171,9 @@ func (s *Service) HandleChannelViewUpdate(ctx context.Context, event shared.Even
 	}
 	return nil
 }
+
+/*func (s *Service) HandleMessageViewUpdate(ctx context.Context, event shared.Event) error {
+switch event.ActionKey {
+case shared.ActionKeyMessageCreate:
+	// Handle message creation event to update the message view
+	fmt.Println("Message creation event received. Event handling logic to be implemented.")*/
