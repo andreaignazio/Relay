@@ -28,11 +28,14 @@ func NewRouter(handler *ApiHandler, reader *ReaderApiHandler, wsHandler *WsHandl
 	api.POST("/workspaces", handler.CreateWorkspace)
 	api.GET("/workspaces", reader.ListUserWorkspaces)
 	api.GET("/ws", wsHandler.ServeWebsocket)
-	workspaces := api.Group("/workspaces")
-	workspaces.POST("/:workspaceID/channels", handler.CreateChannel)
-	workspaces.GET("/:workspaceID/channels", reader.ListUserChannels)
-	workspaces.GET("/:workspaceID/directmessages", reader.ListUserDirectMessages)
-	workspaces.GET("/:workspaceID/browsechannels", reader.BrowseChannels)
+	workspaces := api.Group("/workspaces/:workspaceID")
+	workspaces.POST("/channels", handler.CreateChannel)
+	workspaces.GET("/channels", reader.ListUserChannels)
+	workspaces.GET("/directmessages", reader.ListUserDirectMessages)
+	workspaces.GET("/browsechannels", reader.BrowseChannels)
+
+	channels := workspaces.Group("/channels/:channelID")
+	channels.POST("/messages", handler.CreateMessage)
 
 	return r
 }
