@@ -102,7 +102,7 @@ func (h *Hub) DisconnectClient(ctx context.Context, clientID uuid.UUID) {
 		h.LogChan <- "Error marshaling disconnect command payload for client " + clientID.String() + ": " + err.Error()
 		return
 	}
-	disconnectCommand := websocketcommands.NewWsCommandMessage(websocketcommands.WsCommandKeyDisconnect, clientID.String(), payloadJson)
+	disconnectCommand := websocketcommands.NewWsCommandMessage(websocketcommands.WsCommandKeyDisconnect, clientID, clientID.String(), payloadJson)
 	if err := h.Producer.WriteMessage(ctx, disconnectCommand); err != nil {
 		h.LogChan <- "Error sending disconnect command for client " + clientID.String() + ": " + err.Error()
 	} else {
@@ -120,7 +120,7 @@ func (h *Hub) ConnectClient(ctx context.Context, client *Client) error {
 		h.LogChan <- "Error marshaling connect command payload for client " + client.ClientID.String() + ": " + err.Error()
 		return err
 	}
-	connectCommand := websocketcommands.NewWsCommandMessage(websocketcommands.WsCommandKeyConnect, client.ClientID.String(), payloadJson)
+	connectCommand := websocketcommands.NewWsCommandMessage(websocketcommands.WsCommandKeyConnect, client.ConnectionId, client.ClientID.String(), payloadJson)
 	/*if err := h.Producer.WriteMessage(ctx, connectCommand); err != nil {
 		h.LogChan <- "Error sending connect command for client " + client.ClientID.String() + ": " + err.Error()
 		return err

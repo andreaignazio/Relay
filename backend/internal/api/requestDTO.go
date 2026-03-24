@@ -12,3 +12,11 @@ type CreateChannelRequest struct {
 	Type              string  `json:"type" binding:"required,oneof=public private"`
 	NotificationsPref *string `json:"notificationsPref" binding:"oneof=all mentions none"`
 }
+
+type CreateMessageRequest struct {
+	Content string `json:"content" binding:"required"`
+}
+
+type ReplyToMessageRequest struct {
+	Content string `json:"content" binding:"required"`
+}

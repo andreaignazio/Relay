@@ -231,7 +231,7 @@ func (wa *WsAggregator) HandleWsCommand(ctx context.Context, msg kafka.Message) 
 		wa.SubscriptionsByClient[clientID] = append(wa.SubscriptionsByClient[clientID], payload.Subscriptions...)
 		topic := shared.NewWsClientTopic(clientID.String(), 1, 1)
 		wa.ProducerByClient[clientID] = producer.NewKafkaProducer(topic, wa.KafkaConn)
-		wa.sendAck(clientID, websocketcommands.WsCommandKeySubscribe, true, "")
+		wa.sendAck(clientID, command.WsCommandID, websocketcommands.WsCommandKeySubscribe, true, "")
 		wa.LogChan <- fmt.Sprintf("[WSAggregator] Subscribed client %s to topics: %v", clientID, payload.Subscriptions)
 
 	case websocketcommands.WsCommandKeyUnsubscribe:
@@ -258,7 +258,7 @@ func (wa *WsAggregator) HandleWsCommand(ctx context.Context, msg kafka.Message) 
 				wa.CleanUpClientResources(clientID)
 			}
 		}
-		wa.sendAck(clientID, websocketcommands.WsCommandKeyUnsubscribe, true, "")
+		wa.sendAck(clientID, command.WsCommandID, websocketcommands.WsCommandKeyUnsubscribe, true, "")
 
 	case websocketcommands.WsCommandKeyDisconnect:
 		var payload websocketcommands.DisconnectCommandPayload
@@ -275,7 +275,7 @@ func (wa *WsAggregator) HandleWsCommand(ctx context.Context, msg kafka.Message) 
 		if err := json.Unmarshal(command.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal focus command payload: %w", err)
 		}
-		wa.sendAck(payload.ClientID, websocketcommands.WsCommandKeyFocus, true, "")
+		wa.sendAck(payload.ClientID, command.WsCommandID, websocketcommands.WsCommandKeyFocus, true, "")
 	case websocketcommands.WsCommandKeyConnect:
 		wa.HandleConnectCommand(ctx, *command)
 	default:
@@ -293,12 +293,13 @@ func (wa *WsAggregator) CleanUpClientResources(clientID uuid.UUID) {
 	}
 }
 
-func (wa *WsAggregator) sendAck(clientID uuid.UUID, key websocketcommands.WsCommandKey, success bool, errMsg string) {
+func (wa *WsAggregator) sendAck(clientID uuid.UUID, wsCommandId uuid.UUID, key websocketcommands.WsCommandKey, success bool, errMsg string) {
 	select {
 	case wa.ackChan <- websocketcommands.AggregatorAck{
 		ClientID: clientID,
 		Ack: websocketcommands.WsCommandAck{
 			WsCommandKey: key,
+			WsCommandID:  wsCommandId,
 			Success:      success,
 			Error:        errMsg,
 		},
@@ -334,5 +335,8 @@ func (wa *WsAggregator) HandleConnectCommand(ctx context.Context, command websoc
 	wa.LogChan <- fmt.Sprintf("[WSAggregator] Subscribed client %s to user topic %s with entity ID %s", clientID, topic, userID)
 	wa.SubscriptionsByClient[clientID] = append(wa.SubscriptionsByClient[clientID], userTopicSubscription)
 	wa.ProducerByClient[clientID] = producer.NewKafkaProducer(shared.NewWsClientTopic(clientID.String(), 1, 1), wa.KafkaConn)
+
+	wa.sendAck(clientID, command.WsCommandID, websocketcommands.WsCommandKeyConnect, true, "")
+	wa.LogChan <- fmt.Sprintf("[WSAggregator] Completed Connect command for client %s", clientID)
 	return nil
 }

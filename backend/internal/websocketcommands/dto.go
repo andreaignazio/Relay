@@ -12,6 +12,7 @@ import (
 // producing to subscriptions.commands.
 type FrontendWsMessage struct {
 	WsCommandKey WsCommandKey    `json:"WsCommandKey"`
+	WsCommandID  uuid.UUID       `json:"WsCommandID"`
 	Payload      json.RawMessage `json:"Payload"`
 }
 

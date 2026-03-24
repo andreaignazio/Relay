@@ -32,6 +32,7 @@ const (
 	ActionKeyVerbRemove     ActionKeyVerb = "remove"
 	ActionKeyVerbRevoke     ActionKeyVerb = "revoke"
 	ActionKeyVerbSearch     ActionKeyVerb = "search"
+	ActionKeyVerbReply      ActionKeyVerb = "reply"
 	ActionKeyVerbSend       ActionKeyVerb = "send"
 	ActionKeyVerbSet        ActionKeyVerb = "set"
 	ActionKeyVerbUnarchive  ActionKeyVerb = "unarchive"
@@ -156,6 +157,7 @@ var (
 
 	// message
 	ActionKeyMessageSend   = mustActionKey(ActionKeyVerbSend, ActionKeyResourceMessage)
+	ActionKeyMessageReply  = mustActionKey(ActionKeyVerbReply, ActionKeyResourceMessage)
 	ActionKeyMessageEdit   = mustActionKey(ActionKeyVerbEdit, ActionKeyResourceMessage)
 	ActionKeyMessageDelete = mustActionKey(ActionKeyVerbDelete, ActionKeyResourceMessage)
 	ActionKeyMessageList   = mustActionKey(ActionKeyVerbList, ActionKeyResourceMessage)

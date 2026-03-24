@@ -15,20 +15,21 @@ import (
 )
 
 type Client struct {
-	ClientID  uuid.UUID
-	UserID    uuid.UUID
-	Conn      *websocket.Conn
-	send      chan []byte
-	hub       *Hub
-	LogChan   chan string
-	Consumer  *consumer.KafkaConsumer
-	Topic     shared.Topic
-	kafkaConn *kafkaconn.KafkaConn
-	ctx       context.Context
-	cancel    context.CancelFunc
+	ClientID     uuid.UUID
+	ConnectionId uuid.UUID
+	UserID       uuid.UUID
+	Conn         *websocket.Conn
+	send         chan []byte
+	hub          *Hub
+	LogChan      chan string
+	Consumer     *consumer.KafkaConsumer
+	Topic        shared.Topic
+	kafkaConn    *kafkaconn.KafkaConn
+	ctx          context.Context
+	cancel       context.CancelFunc
 }
 
-func NewClient(clientID, userID uuid.UUID,
+func NewClient(clientID, connectionId, userID uuid.UUID,
 	conn *websocket.Conn,
 	consumer *consumer.KafkaConsumer,
 	logChan chan string,
@@ -38,17 +39,18 @@ func NewClient(clientID, userID uuid.UUID,
 	ctx context.Context,
 	cancel context.CancelFunc) *Client {
 	return &Client{
-		ClientID:  clientID,
-		UserID:    userID,
-		Conn:      conn,
-		send:      make(chan []byte, 256),
-		hub:       hub,
-		LogChan:   logChan,
-		Consumer:  consumer,
-		kafkaConn: kafkaConn,
-		Topic:     topic,
-		ctx:       ctx,
-		cancel:    cancel,
+		ClientID:     clientID,
+		ConnectionId: connectionId,
+		UserID:       userID,
+		Conn:         conn,
+		send:         make(chan []byte, 256),
+		hub:          hub,
+		LogChan:      logChan,
+		Consumer:     consumer,
+		kafkaConn:    kafkaConn,
+		Topic:        topic,
+		ctx:          ctx,
+		cancel:       cancel,
 	}
 }
 
@@ -121,7 +123,7 @@ func (c *Client) forwardToAggregator(raw []byte) error {
 	if err != nil {
 		return fmt.Errorf("marshal kafka payload: %w", err)
 	}
-	wsCmd := websocketcommands.NewWsCommandMessage(msg.WsCommandKey, c.ClientID.String(), payloadJson)
+	wsCmd := websocketcommands.NewWsCommandMessage(msg.WsCommandKey, msg.WsCommandID, c.ClientID.String(), payloadJson)
 	return c.hub.Producer.WriteMessage(c.ctx, wsCmd)
 }
 

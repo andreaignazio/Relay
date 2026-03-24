@@ -11,6 +11,7 @@ import (
 // after a WsCommand is processed. The frontend uses it to unblock the UI.
 type WsCommandAck struct {
 	WsCommandKey WsCommandKey `json:"WsCommandKey"`
+	WsCommandID  uuid.UUID    `json:"WsCommandID"`
 	Success      bool         `json:"Success"`
 	Error        string       `json:"Error,omitempty"`
 }
@@ -25,9 +26,9 @@ type AggregatorAck struct {
 
 type WsCommandMessage struct {
 	WsCommandKey WsCommandKey        `json:"WsCommandKey"`
+	WsCommandID  uuid.UUID           `json:"WsCommandID"`
 	PartitionKey shared.PartitionKey `json:"-"`
 	Payload      json.RawMessage     `json:"Payload"`
-	// Add other fields as needed for your commands
 }
 
 type WsCommandKey string
@@ -56,11 +57,12 @@ func WsCommandMessageFromBytes(data []byte) (*WsCommandMessage, error) {
 	return &cmd, nil
 }
 
-func NewWsCommandMessage(cmdKey WsCommandKey, clientID string,
+func NewWsCommandMessage(cmdKey WsCommandKey, wsCommandId uuid.UUID, clientID string,
 	payload json.RawMessage) WsCommandMessage {
 	partitionKey := shared.NewWsCommandPartitionKey(clientID)
 	return WsCommandMessage{
 		WsCommandKey: cmdKey,
+		WsCommandID:  wsCommandId,
 		PartitionKey: partitionKey,
 		Payload:      payload,
 	}

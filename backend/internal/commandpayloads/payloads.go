@@ -15,3 +15,16 @@ type CreateChannelPayload struct {
 	Type              string    `json:"type"` // "public" or "private"
 	NotificationsPref *string   `json:"notificationsPref,omitempty"`
 }
+
+type CreateMessagePayload struct {
+	WorkspaceID uuid.UUID `json:"workspaceId"`
+	ChannelID   uuid.UUID `json:"channelId"`
+	Content     string    `json:"content"`
+}
+
+type ReplyToMessagePayload struct {
+	WorkspaceID     uuid.UUID `json:"workspaceId"`
+	ChannelID       uuid.UUID `json:"channelId"`
+	ParentMessageID uuid.UUID `json:"parentMessageId"`
+	Content         string    `json:"content"`
+}

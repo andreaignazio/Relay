@@ -218,6 +218,26 @@ func NewChannelCommandPartitionKey(channelID string) CommandPartitionKey {
 	}
 }
 
+func NewMessageCommandPartitionKey(channelID string) CommandPartitionKey {
+	return CommandPartitionKey{
+		Kind:         PartitionKeyKindCommand,
+		ServicesKeys: ServicesKeysMessages,
+		AggregateID:  channelID,
+	}
+}
+
+func NewChannelEventPartitionKey(workspaceID string) EventPartitionKey {
+	return NewWorkspaceEventPartitionKey(workspaceID)
+}
+
+func NewMessageEventPartitionKey(channelID string) EventPartitionKey {
+	return EventPartitionKey{
+		Kind:         PartitionKeyKindEvent,
+		ParentEntity: EntityKeysChannel,
+		ParentID:     channelID,
+	}
+}
+
 func NewWorkspaceRealTimePartitionKey(workspaceID string) RealTimePartitionKey {
 	return RealTimePartitionKey{
 		Kind:                PartitionKeyKindRealTime,

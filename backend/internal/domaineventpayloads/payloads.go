@@ -17,3 +17,11 @@ type ChannelCreatedPayload struct {
 	UserID      uuid.UUID            `json:"UserID"`
 	Type        entities.ChannelType `json:"Type"`
 }
+
+type MessageCreatedPayload struct {
+	WorkspaceID uuid.UUID `json:"WorkspaceID"`
+	ChannelID   uuid.UUID `json:"ChannelID"`
+	AggregateID uuid.UUID `json:"AggregateID"`
+
+	UserID uuid.UUID `json:"UserID"`
+}

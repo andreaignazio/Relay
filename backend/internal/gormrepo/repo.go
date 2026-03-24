@@ -76,6 +76,16 @@ func (r *Repository) UpsertChannelMembershipSnapshotTX(ctx context.Context, snap
 	}).Create(&snapshot).Error
 }
 
+func (r *Repository) GetMessageSnapshot(ctx context.Context, aggregateID uuid.UUID, snapshot *models.MessageSnapshot) error {
+	return r.db.WithContext(ctx).Where("id = ?", aggregateID).First(snapshot).Error
+}
+
+func (r *Repository) UpsertMessageSnapshotTX(ctx context.Context, snapshot models.MessageSnapshot) error {
+	return r.dbFromCtx(ctx).Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&snapshot).Error
+}
+
 func (r *Repository) CheckWorkspaceSlugExists(ctx context.Context, slug string) (bool, error) {
 	var count int64
 	if err := r.db.WithContext(ctx).Model(&models.WorkspaceSnapshot{}).Where("slug = ?", slug).Count(&count).Error; err != nil {

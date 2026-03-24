@@ -6,6 +6,7 @@ import (
 	"gokafka/database"
 	"gokafka/internal/api"
 	"gokafka/internal/commandservices/channels"
+	"gokafka/internal/commandservices/messages"
 	"gokafka/internal/gormrepo"
 	"gokafka/internal/kafkaclient/consumer"
 	"gokafka/internal/kafkaclient/producer"
@@ -105,10 +106,12 @@ func main() {
 	//Command handlers and services initialization
 	workspaceService := workspaces.NewService(gormRepository, gormRepository, gormRepository, eventProducer, logChan)
 	channelService := channels.NewService(gormRepository, gormRepository, gormRepository, eventProducer, logChan)
+	messageService := messages.NewService(gormRepository, gormRepository, gormRepository, eventProducer, logChan)
 
 	commandRouter := messagerouter.NewCommandRouter()
 	commandRouter.RegisterHandler(shared.ActionKeyWorkspaceCreate, workspaceService.HandleCreateWorkspace)
 	commandRouter.RegisterHandler(shared.ActionKeyChannelCreate, channelService.HandleCreateChannel)
+	commandRouter.RegisterHandler(shared.ActionKeyMessageSend, messageService.HandleCreateMessage)
 
 	//Real-time event handlers initialization
 	rtEventsHandler := rteventshandler.NewHandler(logChan, workspaceTopicProducer, channelTopicProducer, userTopicProducer)

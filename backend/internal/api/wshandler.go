@@ -47,6 +47,16 @@ func (h *WsHandler) ServeWebsocket(c *gin.Context) {
 		c.JSON(500, gin.H{"error": "Invalid user ID"})
 		return
 	}
+	connectionIdStr := c.Query("connectionId")
+	if connectionIdStr == "" {
+		c.JSON(400, gin.H{"error": "Missing connectionId"})
+		return
+	}
+	connectionId, err := uuid.Parse(connectionIdStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid connectionId"})
+		return
+	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -60,7 +70,7 @@ func (h *WsHandler) ServeWebsocket(c *gin.Context) {
 	}
 	clientCtx, clientCancel := context.WithCancel(h.ctx)
 	clientConsumer := consumer.NewKafkaConsumer(topic, h.ConsumerGroupID, h.KafkaConn)
-	client := websocketdomain.NewClient(clientId, userID, conn, clientConsumer, h.LogChan, h.Hub, h.KafkaConn, topic, clientCtx, clientCancel)
+	client := websocketdomain.NewClient(clientId, connectionId, userID, conn, clientConsumer, h.LogChan, h.Hub, h.KafkaConn, topic, clientCtx, clientCancel)
 	h.Hub.Register <- client
 	go client.ReadPump()
 	go client.WritePump()
