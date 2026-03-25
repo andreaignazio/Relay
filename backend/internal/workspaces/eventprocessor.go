@@ -40,9 +40,11 @@ func (s *Service) HandleCreateWorkspace(ctx context.Context, command shared.Comm
 
 	workspaceSnapshot = models.WorkspaceSnapshot{
 		Workspace: entities.Workspace{
-			ID:   workspaceID, // workspaceID è string, ID è uuid.UUID
-			Name: payload.Name,
-			Slug: slug,
+			ID:          workspaceID,
+			Name:        payload.Name,
+			Slug:        slug,
+			IconURL:     payload.IconURL,
+			Description: payload.Description,
 			Timestamps: entities.Timestamps{
 				CreatedAt: time.Now(),
 				UpdatedAt: time.Now(),

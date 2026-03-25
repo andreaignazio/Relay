@@ -43,8 +43,9 @@ func (h *ApiHandler) CreateWorkspace(c *gin.Context) {
 		UserID: userID.String(),
 	}
 	payloadBytes, err := json.Marshal(commandpayloads.CreateWorkspacePayload{
-		Name:    req.Name,
-		IconURL: req.IconURL,
+		Name:        req.Name,
+		IconURL:     req.IconURL,
+		Description: req.Description,
 	})
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to marshal payload"})

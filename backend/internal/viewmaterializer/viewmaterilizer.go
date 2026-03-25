@@ -68,6 +68,7 @@ func (s *Service) HandleWorkspaceViewUpdate(ctx context.Context, event shared.Ev
 			Name:        payload.Workspace.Name,
 			Slug:        payload.Workspace.Slug,
 			IconURL:     payload.Workspace.IconURL,
+			Description: payload.Workspace.Description,
 			CreatedAt:   payload.Workspace.CreatedAt,
 			UpdatedAt:   payload.Workspace.UpdatedAt,
 			Role:        payload.Membership.Role,

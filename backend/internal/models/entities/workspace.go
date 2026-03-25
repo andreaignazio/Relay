@@ -7,10 +7,11 @@ import (
 )
 
 type Workspace struct {
-	ID      uuid.UUID `json:"Id"`
-	Name    string    `json:"Name"`
-	Slug    string    `json:"Slug"`
-	IconURL *string   `json:"IconUrl,omitempty"`
+	ID          uuid.UUID `json:"Id"`
+	Name        string    `json:"Name"`
+	Slug        string    `json:"Slug"`
+	IconURL     *string   `json:"IconUrl,omitempty"`
+	Description *string   `json:"Description,omitempty"`
 	Timestamps
 }
 

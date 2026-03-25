@@ -13,6 +13,7 @@ type WorkspaceView struct {
 	Name        string                       `json:"Name"`
 	Slug        string                       `json:"Slug"`
 	IconURL     *string                      `json:"IconUrl,omitempty"`
+	Description *string                      `json:"Description,omitempty"`
 	CreatedAt   time.Time                    `json:"CreatedAt"`
 	UpdatedAt   time.Time                    `json:"UpdatedAt"`
 	Role        entities.WorkspaceMemberRole `json:"Role"`

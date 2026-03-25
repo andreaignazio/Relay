@@ -3,8 +3,9 @@ package commandpayloads
 import "github.com/google/uuid"
 
 type CreateWorkspacePayload struct {
-	Name    string  `json:"name"`
-	IconURL *string `json:"iconUrl,omitempty"`
+	Name        string  `json:"name"`
+	IconURL     *string `json:"iconUrl,omitempty"`
+	Description *string `json:"description,omitempty"`
 }
 
 type CreateChannelPayload struct {
