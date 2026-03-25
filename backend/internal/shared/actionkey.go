@@ -48,6 +48,7 @@ const (
 	ActionKeyResourceAttachment    ActionKeyResource = "attachment"
 	ActionKeyResourceChannel       ActionKeyResource = "channel"
 	ActionKeyResourceChannelMember ActionKeyResource = "channel_member"
+	ActionKeyResourceDM            ActionKeyResource = "dm"
 	ActionKeyResourceInvite        ActionKeyResource = "invite"
 	ActionKeyResourceMember        ActionKeyResource = "member"
 	ActionKeyResourceMessage       ActionKeyResource = "message"
@@ -68,6 +69,8 @@ func (kr ActionKeyResource) MapParent() ActionKeyResource {
 	case ActionKeyResourceMember:
 		return ActionKeyResourceWorkspace
 	case ActionKeyResourceChannel:
+		return ActionKeyResourceWorkspace
+	case ActionKeyResourceDM:
 		return ActionKeyResourceWorkspace
 	case ActionKeyResourceChannelMember:
 		return ActionKeyResourceChannel
@@ -137,6 +140,9 @@ var (
 	ActionKeyMemberUpdateRole = mustActionKey(ActionKeyVerbUpdateRole, ActionKeyResourceMember)
 	ActionKeyMemberList       = mustActionKey(ActionKeyVerbList, ActionKeyResourceMember)
 	ActionKeyMemberGet        = mustActionKey(ActionKeyVerbGet, ActionKeyResourceMember)
+
+	// dm
+	ActionKeyDMCreate = mustActionKey(ActionKeyVerbCreate, ActionKeyResourceDM)
 
 	// channel
 	ActionKeyChannelCreate    = mustActionKey(ActionKeyVerbCreate, ActionKeyResourceChannel)

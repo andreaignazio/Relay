@@ -45,7 +45,7 @@ func (h *Handler) HandleEvent(ctx context.Context, event shared.Event) error {
 		if !ok {
 			return fmt.Errorf("no entity key for topic: %s", route.Topic)
 		}
-		partitionID, ok := event.EntityContext[entityKey]
+		partitionIDs, ok := event.EntityContext[entityKey]
 		if !ok {
 			return fmt.Errorf("EntityContext missing key %s for ActionKey %s", entityKey, event.GetActionKey())
 		}
@@ -58,17 +58,18 @@ func (h *Handler) HandleEvent(ctx context.Context, event shared.Event) error {
 			continue
 		}
 
-		rtEvent := shared.RTEvent{
-			MessageID:    event.GetMessageID(),
-			AggregateID:  event.GetAggregateID(),
-			ActionKey:    event.GetActionKey(),
-			Type:         route.EventType,
-			PartitionKey: partitionKeyForTopic(route.Topic, partitionID),
-			Payload:      payload,
-		}
-
-		if err := h.producerForTopic(route.Topic).WriteMessage(ctx, rtEvent); err != nil {
-			return fmt.Errorf("write rt event (%s): %w", route.Topic, err)
+		for _, partitionID := range partitionIDs {
+			rtEvent := shared.RTEvent{
+				MessageID:    event.GetMessageID(),
+				AggregateID:  event.GetAggregateID(),
+				ActionKey:    event.GetActionKey(),
+				Type:         route.EventType,
+				PartitionKey: partitionKeyForTopic(route.Topic, partitionID),
+				Payload:      payload,
+			}
+			if err := h.producerForTopic(route.Topic).WriteMessage(ctx, rtEvent); err != nil {
+				return fmt.Errorf("write rt event (%s): %w", route.Topic, err)
+			}
 		}
 	}
 

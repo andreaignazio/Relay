@@ -73,10 +73,11 @@ func (h *Handler) buildMessageRichPayload(ctx context.Context, event shared.Even
 }
 
 func (h *Handler) buildHintPayload(event shared.Event) (json.RawMessage, error) {
-	channelID, ok := event.EntityContext[shared.EntityKeysChannel]
-	if !ok {
+	channelIDs, ok := event.EntityContext[shared.EntityKeysChannel]
+	if !ok || len(channelIDs) == 0 {
 		return nil, nil
 	}
+	channelID := channelIDs[0]
 	payload := RTSidebarPayload{
 		ChannelID: channelID,
 		Hint:      "increment",

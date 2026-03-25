@@ -22,6 +22,11 @@ type CreateMessagePayload struct {
 	Content     string    `json:"content"`
 }
 
+type CreateDMPayload struct {
+	WorkspaceID    uuid.UUID   `json:"workspaceId"`
+	ParticipantIDs []uuid.UUID `json:"participantIds"`
+}
+
 type ReplyToMessagePayload struct {
 	WorkspaceID     uuid.UUID `json:"workspaceId"`
 	ChannelID       uuid.UUID `json:"channelId"`

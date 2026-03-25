@@ -111,6 +111,7 @@ func main() {
 	commandRouter := messagerouter.NewCommandRouter()
 	commandRouter.RegisterHandler(shared.ActionKeyWorkspaceCreate, workspaceService.HandleCreateWorkspace)
 	commandRouter.RegisterHandler(shared.ActionKeyChannelCreate, channelService.HandleCreateChannel)
+	commandRouter.RegisterHandler(shared.ActionKeyDMCreate, channelService.HandleCreateDM)
 	commandRouter.RegisterHandler(shared.ActionKeyMessageSend, messageService.HandleCreateMessage)
 
 	//Real-time event handlers initialization
@@ -127,6 +128,7 @@ func main() {
 	materializerRouter := messagerouter.NewEventRouter()
 	materializerRouter.RegisterHandler(shared.ActionKeyWorkspaceCreate, viewmaterializerService.HandleWorkspaceViewUpdate)
 	materializerRouter.RegisterHandler(shared.ActionKeyChannelCreate, viewmaterializerService.HandleChannelViewUpdate)
+	materializerRouter.RegisterHandler(shared.ActionKeyDMCreate, viewmaterializerService.HandleDMViewUpdate)
 
 	domainCommandConsumer := consumer.NewKafkaConsumer(domainCommandTopic, shared.CommandConsumerGroupId, conn)
 	viewMaterializerConsumer := consumer.NewKafkaConsumer(eventsTopic, shared.ViewMaterializerConsumerGroupId, conn)
@@ -151,7 +153,7 @@ func main() {
 	wsHub := websocketdomain.NewHub(logChan, wsCommandProducer, errChan, wsAggregator.ConnectClientChan, ackChan)
 
 	apiHandler := api.NewHandler(domainCommandProducer)
-	readerApiHandler := api.NewReaderHandler(gormRepository)
+	readerApiHandler := api.NewReaderHandler(gormRepository, gormRepository)
 	wsHandler := api.NewWsHandler(wsHub, conn, shared.WebSocketClientsConsumerGroupId, logChan, ctx)
 	server := api.NewRouter(apiHandler, readerApiHandler, wsHandler)
 

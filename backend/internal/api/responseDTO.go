@@ -1,6 +1,7 @@
 package api
 
 import (
+	"gokafka/internal/models"
 	"gokafka/internal/models/materializedviews"
 
 	"github.com/google/uuid"
@@ -20,4 +21,8 @@ type ListUserDirectMessagesResponse struct {
 
 type BrowseChannelsResponse struct {
 	Channels []materializedviews.ChannelView `json:"Channels"`
+}
+
+type ListChannelMessagesResponse struct {
+	Messages []models.MessageSnapshot `json:"Messages"`
 }

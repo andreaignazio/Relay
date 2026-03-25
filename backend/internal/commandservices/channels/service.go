@@ -27,9 +27,9 @@ type EventStoreRepo interface {
 
 type SnapshotRepo interface {
 	GetChannelSnapshot(ctx context.Context, aggregateID uuid.UUID, snapshot *models.ChannelSnapshot) error
-	//CheckWorkspaceSlugExists(ctx context.Context, slug string) (bool, error)
 	UpsertChannelSnapshotTX(ctx context.Context, snapshot models.ChannelSnapshot) error
 	UpsertChannelMembershipSnapshotTX(ctx context.Context, snapshot models.ChannelMembershipSnapshot) error
+	FindExistingDMChannel(ctx context.Context, workspaceID uuid.UUID, participantIDs []uuid.UUID) (uuid.UUID, bool, error)
 }
 
 func NewService(tx Transactor, eventStoreRepo EventStoreRepo, snapshotRepo SnapshotRepo, producer *producer.KafkaProducer, logChan chan string) *Service {

@@ -23,7 +23,7 @@ type Event struct {
 	AggregateID   uuid.UUID          `json:"AggregateID"`
 	ActionKey     ActionKey          `json:"ActionKey"`
 	PartitionKey  EventPartitionKey  `json:"-"`
-	EntityContext map[EntityKeys]uuid.UUID `json:"EntityContext,omitempty"`
+	EntityContext map[EntityKeys][]uuid.UUID `json:"EntityContext,omitempty"`
 	Payload       json.RawMessage    `json:"Payload,omitempty"`
 }
 
@@ -60,7 +60,7 @@ func NewEvent(
 	aggregateID uuid.UUID,
 	actionKey ActionKey,
 	partitionKey EventPartitionKey,
-	entityContext map[EntityKeys]uuid.UUID,
+	entityContext map[EntityKeys][]uuid.UUID,
 	payload json.RawMessage,
 ) Event {
 	return Event{

@@ -68,6 +68,67 @@ func (h *ApiHandler) CreateWorkspace(c *gin.Context) {
 	c.JSON(200, gin.H{"CommandID": cmd.GetMessageID()})
 }
 
+func (h *ApiHandler) CreateDM(c *gin.Context) {
+	ctx := c.Request.Context()
+	userIDStr := c.MustGet("UserID").(string)
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		return
+	}
+	traceID := c.MustGet("TraceID").(uuid.UUID)
+	workspaceIDStr := c.Param("workspaceID")
+	workspaceID, err := uuid.Parse(workspaceIDStr)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid workspace ID"})
+		return
+	}
+
+	var req CreateDirectMessageRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	participantIDs := make([]uuid.UUID, 0, len(req.RecipientIDs)+1)
+	participantIDs = append(participantIDs, userID)
+	for _, idStr := range req.RecipientIDs {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "Invalid recipient ID: " + idStr})
+			return
+		}
+		participantIDs = append(participantIDs, id)
+	}
+
+	aggregateID := uuid.New()
+	metadata := shared.MessageMetadata{UserID: userID.String()}
+	payloadBytes, err := json.Marshal(commandpayloads.CreateDMPayload{
+		WorkspaceID:    workspaceID,
+		ParticipantIDs: participantIDs,
+	})
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to marshal payload"})
+		return
+	}
+
+	cmd := shared.NewCommand(
+		aggregateID,
+		shared.ActionKeyDMCreate,
+		shared.NewDMCommandPartitionKey(aggregateID.String()),
+		traceID,
+		metadata,
+		payloadBytes,
+	)
+
+	if err := h.Producer.WriteMessage(ctx, cmd); err != nil {
+		c.JSON(500, gin.H{"error": "Failed to send command"})
+		return
+	}
+
+	c.JSON(200, gin.H{"CommandID": cmd.GetMessageID()})
+}
+
 func (h *ApiHandler) ListWorkspaces(c *gin.Context) {
 
 	workspaces := []entities.Workspace{

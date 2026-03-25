@@ -80,6 +80,12 @@ func (r *Repository) GetMessageSnapshot(ctx context.Context, aggregateID uuid.UU
 	return r.db.WithContext(ctx).Where("id = ?", aggregateID).First(snapshot).Error
 }
 
+func (r *Repository) GetChannelMessagesSnapshot(ctx context.Context, channelID uuid.UUID) ([]models.MessageSnapshot, error) {
+	var snapshots []models.MessageSnapshot
+	err := r.db.WithContext(ctx).Where("channel_id = ?", channelID).Order("created_at ASC").Find(&snapshots).Error
+	return snapshots, err
+}
+
 func (r *Repository) GetUserSnapshot(ctx context.Context, userID uuid.UUID, snapshot *models.UserSnapshot) error {
 	return r.db.WithContext(ctx).Where("id = ?", userID).First(snapshot).Error
 }
@@ -88,6 +94,40 @@ func (r *Repository) UpsertMessageSnapshotTX(ctx context.Context, snapshot model
 	return r.dbFromCtx(ctx).Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).Create(&snapshot).Error
+}
+
+func (r *Repository) FindExistingDMChannel(ctx context.Context, workspaceID uuid.UUID, participantIDs []uuid.UUID) (uuid.UUID, bool, error) {
+	var channelID uuid.UUID
+	err := r.db.WithContext(ctx).Raw(`
+		SELECT cs.id
+		FROM channel_snapshots cs
+		JOIN channel_membership_snapshots cms ON cs.id = cms.channel_id
+		WHERE cs.workspace_id = ?
+		  AND cs.type = 'dm'
+		  AND cs.deleted_at IS NULL
+		  AND cms.deleted_at IS NULL
+		  AND cms.user_id IN (?)
+		GROUP BY cs.id
+		HAVING COUNT(DISTINCT cms.user_id) = ?
+		AND cs.id NOT IN (
+			SELECT cms2.channel_id
+			FROM channel_membership_snapshots cms2
+			JOIN channel_snapshots cs2 ON cs2.id = cms2.channel_id
+			WHERE cs2.workspace_id = ?
+			  AND cs2.type = 'dm'
+			  AND cs2.deleted_at IS NULL
+			  AND cms2.deleted_at IS NULL
+			  AND cms2.user_id NOT IN (?)
+		)
+		LIMIT 1
+	`, workspaceID, participantIDs, len(participantIDs), workspaceID, participantIDs).Scan(&channelID).Error
+	if err != nil {
+		return uuid.Nil, false, err
+	}
+	if channelID == uuid.Nil {
+		return uuid.Nil, false, nil
+	}
+	return channelID, true, nil
 }
 
 func (r *Repository) CheckWorkspaceSlugExists(ctx context.Context, slug string) (bool, error) {

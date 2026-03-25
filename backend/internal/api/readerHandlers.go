@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"gokafka/internal/models"
 	"gokafka/internal/models/materializedviews"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +11,7 @@ import (
 
 type ReaderApiHandler struct {
 	MaterialedViewRepository MaterialedViewRepository
+	SnapshotRepository       SnapshotRepository
 }
 
 type MaterialedViewRepository interface {
@@ -19,9 +21,14 @@ type MaterialedViewRepository interface {
 	BrowseChannelsViews(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]materializedviews.ChannelView, error)
 }
 
-func NewReaderHandler(MaterialedViewRepository MaterialedViewRepository) *ReaderApiHandler {
+type SnapshotRepository interface {
+	GetChannelMessagesSnapshot(ctx context.Context, channelID uuid.UUID) ([]models.MessageSnapshot, error)
+}
+
+func NewReaderHandler(MaterialedViewRepository MaterialedViewRepository, SnapshotRepository SnapshotRepository) *ReaderApiHandler {
 	return &ReaderApiHandler{
 		MaterialedViewRepository: MaterialedViewRepository,
+		SnapshotRepository:       SnapshotRepository,
 	}
 }
 
@@ -104,8 +111,8 @@ func (h *ReaderApiHandler) BrowseChannels(c *gin.Context) {
 	c.JSON(200, BrowseChannelsResponse{Channels: views})
 }
 
-/*func (h *ReaderApiHandler) ListMessages(c *gin.Context) {
-	workspaceID, err := uuid.Parse(c.Param("workspaceID"))
+func (h *ReaderApiHandler) ListChannelMessages(c *gin.Context) {
+	_, err := uuid.Parse(c.Param("workspaceID"))
 	if err != nil {
 		c.JSON(400, gin.H{"error": "invalid workspace ID"})
 		return
@@ -115,16 +122,16 @@ func (h *ReaderApiHandler) BrowseChannels(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "invalid channel ID"})
 		return
 	}
-	userID, err := uuid.Parse(c.MustGet("UserID").(string))
+	_, err = uuid.Parse(c.MustGet("UserID").(string))
 	if err != nil {
 		c.JSON(400, gin.H{"error": "invalid user ID"})
 		return
 	}
 	ctx := c.Request.Context()
-	views, err := h.MaterialedViewRepository.GetUserMessagesViews(ctx, workspaceID, channelID, userID)
+	messages, err := h.SnapshotRepository.GetChannelMessagesSnapshot(ctx, channelID)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, ListMessagesResponse{Messages: views})
-}*/
+	c.JSON(200, ListChannelMessagesResponse{Messages: messages})
+}

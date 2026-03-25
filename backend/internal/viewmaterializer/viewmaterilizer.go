@@ -146,34 +146,38 @@ func (s *Service) HandleChannelViewUpdate(ctx context.Context, event shared.Even
 			}
 			return nil
 
-		case entities.ChannelTypeDM:
-			dmMembershipView := materializedviews.DirectMessageMembershipView{
-				ChannelID:         storedPayload.Channel.ID,
-				UserID:            storedPayload.Membership.UserID,
-				WorkspaceID:       storedPayload.Channel.WorkspaceID,
-				JoinedAt:          storedPayload.Membership.JoinedAt,
-				NotificationsPref: storedPayload.Membership.NotificationsPref,
-			}
-
-			// Handle direct message channel creation event to update the direct message membership view
-			if err := s.ChannelViewRepository.UpsertDirectMessageMembershipView(ctx, dmMembershipView); err != nil {
-				return fmt.Errorf("failed to upsert direct message membership view: %w", err)
-			}
-			return nil
-
 		}
 	case shared.ActionKeyChannelUpdate:
-		// Handle channel membership update events to update the channel membership view
-		// Similar to the above, you would read the event payload, extract necessary information,
-		// and then update the "channel_membership_view" table accordingly.
 		fmt.Println("Channel membership update event received. Event handling logic to be implemented.")
 		return nil
 	}
 	return nil
 }
 
-/*func (s *Service) HandleMessageViewUpdate(ctx context.Context, event shared.Event) error {
-switch event.ActionKey {
-case shared.ActionKeyMessageCreate:
-	// Handle message creation event to update the message view
-	fmt.Println("Message creation event received. Event handling logic to be implemented.")*/
+func (s *Service) HandleDMViewUpdate(ctx context.Context, event shared.Event) error {
+	switch event.ActionKey {
+	case shared.ActionKeyDMCreate:
+		messageID := event.GetMessageID()
+		storedEvent, err := s.EventStoreRepo.GetStoredEventByID(ctx, messageID)
+		if err != nil {
+			return fmt.Errorf("failed to get event by ID: %w", err)
+		}
+		var payload eventstorepayloads.DMCreatedPayload
+		if err := json.Unmarshal(storedEvent.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal event payload: %w", err)
+		}
+		for _, ms := range payload.Memberships {
+			view := materializedviews.DirectMessageMembershipView{
+				ChannelID:         payload.Channel.ID,
+				UserID:            ms.UserID,
+				WorkspaceID:       payload.Channel.WorkspaceID,
+				JoinedAt:          ms.JoinedAt,
+				NotificationsPref: ms.NotificationsPref,
+			}
+			if err := s.ChannelViewRepository.UpsertDirectMessageMembershipView(ctx, view); err != nil {
+				return fmt.Errorf("failed to upsert DM membership view: %w", err)
+			}
+		}
+	}
+	return nil
+}

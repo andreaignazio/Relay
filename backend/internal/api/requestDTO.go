@@ -13,6 +13,11 @@ type CreateChannelRequest struct {
 	NotificationsPref *string `json:"notificationsPref" binding:"oneof=all mentions none"`
 }
 
+type CreateDirectMessageRequest struct {
+	RecipientIDs      []string `json:"recipientIds" binding:"required,min=1,dive,required"`
+	NotificationsPref *string  `json:"notificationsPref" binding:"oneof=all mentions none"`
+}
+
 type CreateMessageRequest struct {
 	Content string `json:"content" binding:"required"`
 }

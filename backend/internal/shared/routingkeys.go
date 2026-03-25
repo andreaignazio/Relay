@@ -6,6 +6,7 @@ const (
 	EntityKeysWorkspace = ActionKeyResourceWorkspace
 	EntityKeysChannel   = ActionKeyResourceChannel
 	EntityKeysUser      = ActionKeyResourceUser
+	EntityKeysDM        = ActionKeyResourceDM
 )
 
 type ServicesKeys string

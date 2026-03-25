@@ -40,6 +40,9 @@ var routeTable = map[shared.ActionKey][]RouteSpec{
 		{shared.RealTimeDestinationUsers, shared.RTEventTypeInvalidateCache},
 	},
 
+	shared.ActionKeyDMCreate: {
+		{shared.RealTimeDestinationUsers, shared.RTEventTypeInvalidateCache},
+	},
 	shared.ActionKeyChannelCreate: {
 		{shared.RealTimeDestinationWorkspaces, shared.RTEventTypeInvalidateCache},
 	},
@@ -134,6 +137,7 @@ var topicToEntity = map[shared.RealTimeDestination]shared.EntityKeys{
 	shared.RealTimeDestinationWorkspaces: shared.EntityKeysWorkspace,
 	shared.RealTimeDestinationChannels:   shared.EntityKeysChannel,
 	shared.RealTimeDestinationUsers:      shared.EntityKeysUser,
+	// DM events fan-out to users via EntityKeysUser; EntityKeysDM holds the channel ID
 }
 
 func (h *Handler) producerForTopic(topic shared.RealTimeDestination) *producer.KafkaProducer {

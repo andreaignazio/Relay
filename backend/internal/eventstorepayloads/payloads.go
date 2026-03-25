@@ -17,3 +17,8 @@ type ChannelCreatedPayload struct {
 type MessageCreatedPayload struct {
 	Message models.MessageSnapshot
 }
+
+type DMCreatedPayload struct {
+	Channel     models.ChannelSnapshot
+	Memberships []models.ChannelMembershipSnapshot
+}

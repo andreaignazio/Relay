@@ -230,6 +230,14 @@ func NewChannelEventPartitionKey(workspaceID string) EventPartitionKey {
 	return NewWorkspaceEventPartitionKey(workspaceID)
 }
 
+func NewDMCommandPartitionKey(dmChannelID string) CommandPartitionKey {
+	return CommandPartitionKey{
+		Kind:         PartitionKeyKindCommand,
+		ServicesKeys: ServicesKeysChannels,
+		AggregateID:  dmChannelID,
+	}
+}
+
 func NewMessageEventPartitionKey(channelID string) EventPartitionKey {
 	return EventPartitionKey{
 		Kind:         PartitionKeyKindEvent,
