@@ -20,9 +20,23 @@ type CreateDirectMessageRequest struct {
 }
 
 type CreateMessageRequest struct {
-	Content string `json:"content" binding:"required"`
+	Content          string   `json:"content" binding:"required"`
+	MentionedUserIDs []string `json:"mentionedUserIds,omitempty"`
+	MentionChannel   bool     `json:"mentionChannel,omitempty"`
+	MentionHere      bool     `json:"mentionHere,omitempty"`
 }
 
 type ReplyToMessageRequest struct {
 	Content string `json:"content" binding:"required"`
+}
+
+type BatchUsersRequest struct {
+	UserIds []string `json:"userIds" binding:"required,min=1,dive,required"`
+}
+
+type KratosRegistrationHookRequest struct {
+	IdentityID  string `json:"identity_id"`
+	Email       string `json:"email"`
+	DisplayName string `json:"display_name"`
+	Username    string `json:"username"`
 }

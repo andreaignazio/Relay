@@ -8,7 +8,17 @@
       "Bash(go mod:*)",
       "Bash(npm install:*)",
       "Bash(node -e \"const m = require\\(''d:/SoftwareDevelopment/Relay/frontend/relay_fe/node_modules/@tanstack/router-plugin/dist/cjs/vite.js''\\); console.log\\(Object.keys\\(m\\)\\)\")",
-      "Bash(node -e \"const m = require\\(''d:/SoftwareDevelopment/Relay/frontend/relay_fe/node_modules/react-use-websocket/dist/index.js''\\); console.log\\(Object.keys\\(m\\)\\)\")"
+      "Bash(node -e \"const m = require\\(''d:/SoftwareDevelopment/Relay/frontend/relay_fe/node_modules/react-use-websocket/dist/index.js''\\); console.log\\(Object.keys\\(m\\)\\)\")",
+      "Bash(xargs grep:*)",
+      "Bash(curl -s http://localhost:4433/self-service/registration/api)",
+      "Bash(curl -s http://localhost:8080/api/workspaces -H \"X-User-ID: 123a9e76-de34-4ee4-85bc-059b7f76877d\" -w \"\\\\nHTTP %{http_code}\")",
+      "Bash(npx tsc:*)",
+      "Bash(docker compose:*)",
+      "Bash(npx tsr:*)",
+      "Bash(npx @tanstack/router-plugin generate --routesDirectory ./src/routes --generatedRouteTree ./src/routeTree.gen.ts)",
+      "Bash(npx vite:*)",
+      "Bash(grep -n \"GetWorkspaceUsersSnapshot\" /d/SoftwareDevelopment/Relay/backend/internal/gormrepo/*.go)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")"
     ],
     "additionalDirectories": [
       "d:\\SoftwareDevelopment\\Relay",

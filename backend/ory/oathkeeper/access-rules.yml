@@ -1,0 +1,35 @@
+# Webhook interno — nessuna autenticazione (Kratos -> backend)
+# DEVE essere prima di relay-api-protected per matchare prima
+- id: "relay-hooks"
+  upstream:
+    url: "http://host.docker.internal:8080"
+  match:
+    url: "http://localhost:4455/api/hooks/<**>"
+    methods:
+      - POST
+  authenticators:
+    - handler: noop
+  authorizer:
+    handler: allow
+  mutators:
+    - handler: noop
+
+# Rotte protette (include API + WebSocket) — richiedono sessione Kratos valida
+- id: "relay-api-protected"
+  upstream:
+    url: "http://host.docker.internal:8080"
+  match:
+    url: "http://localhost:4455/api/<**>"
+    methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - PATCH
+  authenticators:
+    - handler: cookie_session
+    - handler: bearer_token
+  authorizer:
+    handler: allow
+  mutators:
+    - handler: header

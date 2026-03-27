@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"gokafka/internal/commandpayloads"
 	"gokafka/internal/kafkaclient/producer"
-	"gokafka/internal/models/entities"
 	"gokafka/internal/shared"
 
 	"github.com/gin-gonic/gin"
@@ -21,15 +20,46 @@ func NewHandler(producer *producer.KafkaProducer) *ApiHandler {
 	}
 }
 
-func (h *ApiHandler) CreateWorkspace(c *gin.Context) {
-	ctx := c.Request.Context()
+type CommandsHeadesr struct {
+	UserID    uuid.UUID
+	TraceID   uuid.UUID
+	MessageID uuid.UUID
+	ActionKey string
+}
+
+func (h *ApiHandler) CommandsMustHeader(c *gin.Context) (headers *CommandsHeadesr, err error) {
 	userIDStr := c.MustGet("UserID").(string)
 	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid user ID"})
-		return
+		return nil, err
 	}
 	traceID := c.MustGet("TraceID").(uuid.UUID)
+	messageID := c.MustGet("X-Message-ID").(uuid.UUID)
+	actionKey := c.MustGet("X-Action-Key").(string)
+	return &CommandsHeadesr{
+		UserID:    userID,
+		TraceID:   traceID,
+		MessageID: messageID,
+		ActionKey: actionKey,
+	}, nil
+}
+
+func (h *ApiHandler) CreateWorkspace(c *gin.Context) {
+	ctx := c.Request.Context()
+	headers, err := h.CommandsMustHeader(c)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid headers: " + err.Error()})
+		return
+	}
+
+	userID := headers.UserID
+	traceID := headers.TraceID
+	messageID := headers.MessageID
+	actionKey := headers.ActionKey
+	if actionKey != string(shared.ActionKeyWorkspaceCreate) {
+		c.JSON(400, gin.H{"error": "Invalid action key"})
+		return
+	}
 
 	var req CreateWorkspaceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -53,12 +83,14 @@ func (h *ApiHandler) CreateWorkspace(c *gin.Context) {
 	}
 
 	cmd := shared.NewCommand(
+		messageID,
 		aggregateID, // AggregateID for the new workspace
 		shared.ActionKeyWorkspaceCreate,
 		shared.NewWorkspaceCommandPartitionKey(aggregateID.String()), // Using workspace name as partition key
 		traceID,
 		metadata,
 		payloadBytes, // Payload is the marshaled JSON
+		userID,
 	)
 
 	if err := h.Producer.WriteMessage(ctx, cmd); err != nil {
@@ -71,13 +103,21 @@ func (h *ApiHandler) CreateWorkspace(c *gin.Context) {
 
 func (h *ApiHandler) CreateDM(c *gin.Context) {
 	ctx := c.Request.Context()
-	userIDStr := c.MustGet("UserID").(string)
-	userID, err := uuid.Parse(userIDStr)
+
+	headers, err := h.CommandsMustHeader(c)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		c.JSON(400, gin.H{"error": "Invalid headers: " + err.Error()})
 		return
 	}
-	traceID := c.MustGet("TraceID").(uuid.UUID)
+	userID := headers.UserID
+	traceID := headers.TraceID
+	messageID := headers.MessageID
+	actionKey := headers.ActionKey
+	if actionKey != string(shared.ActionKeyDMCreate) {
+		c.JSON(400, gin.H{"error": "Invalid action key"})
+		return
+	}
+
 	workspaceIDStr := c.Param("workspaceID")
 	workspaceID, err := uuid.Parse(workspaceIDStr)
 	if err != nil {
@@ -114,12 +154,14 @@ func (h *ApiHandler) CreateDM(c *gin.Context) {
 	}
 
 	cmd := shared.NewCommand(
+		messageID,
 		aggregateID,
 		shared.ActionKeyDMCreate,
 		shared.NewDMCommandPartitionKey(aggregateID.String()),
 		traceID,
 		metadata,
 		payloadBytes,
+		userID,
 	)
 
 	if err := h.Producer.WriteMessage(ctx, cmd); err != nil {
@@ -130,25 +172,22 @@ func (h *ApiHandler) CreateDM(c *gin.Context) {
 	c.JSON(200, gin.H{"CommandID": cmd.GetMessageID()})
 }
 
-func (h *ApiHandler) ListWorkspaces(c *gin.Context) {
-
-	workspaces := []entities.Workspace{
-		{ID: uuid.New(), Name: "Workspace 1"},
-		{ID: uuid.New(), Name: "Workspace 2"},
-		{ID: uuid.New(), Name: "Workspace 3"},
-	}
-	c.JSON(200, workspaces)
-}
-
 func (h *ApiHandler) CreateChannel(c *gin.Context) {
 	ctx := c.Request.Context()
-	userIDStr := c.MustGet("UserID").(string)
-	userID, err := uuid.Parse(userIDStr)
+
+	headers, err := h.CommandsMustHeader(c)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		c.JSON(400, gin.H{"error": "Invalid headers: " + err.Error()})
 		return
 	}
-	traceID := c.MustGet("TraceID").(uuid.UUID)
+	userID := headers.UserID
+	traceID := headers.TraceID
+	messageID := headers.MessageID
+	actionKey := headers.ActionKey
+	if actionKey != string(shared.ActionKeyChannelCreate) {
+		c.JSON(400, gin.H{"error": "Invalid action key"})
+		return
+	}
 
 	workspaceIDStr := c.Param("workspaceID")
 	workspaceID, err := uuid.Parse(workspaceIDStr)
@@ -182,12 +221,14 @@ func (h *ApiHandler) CreateChannel(c *gin.Context) {
 	}
 
 	cmd := shared.NewCommand(
+		messageID,
 		aggregateID, // AggregateID for the new channel
 		shared.ActionKeyChannelCreate,
 		shared.NewChannelCommandPartitionKey(aggregateID.String()), // Using channel name as partition key
 		traceID,
 		metadata,
 		payloadBytes, // Payload is the marshaled JSON
+		userID,
 	)
 
 	if err := h.Producer.WriteMessage(ctx, cmd); err != nil {
@@ -200,13 +241,21 @@ func (h *ApiHandler) CreateChannel(c *gin.Context) {
 
 func (h *ApiHandler) CreateMessage(c *gin.Context) {
 	ctx := c.Request.Context()
-	userIDStr := c.MustGet("UserID").(string)
-	userID, err := uuid.Parse(userIDStr)
+
+	headers, err := h.CommandsMustHeader(c)
 	if err != nil {
-		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		c.JSON(400, gin.H{"error": "Invalid headers: " + err.Error()})
 		return
 	}
-	traceID := c.MustGet("TraceID").(uuid.UUID)
+	userID := headers.UserID
+	traceID := headers.TraceID
+	messageID := headers.MessageID
+	actionKey := headers.ActionKey
+	if actionKey != string(shared.ActionKeyMessageSend) {
+		c.JSON(400, gin.H{"error": "Invalid action key"})
+		return
+	}
+
 	workspaceIDStr := c.Param("workspaceID")
 	workspaceID, err := uuid.Parse(workspaceIDStr)
 	if err != nil {
@@ -229,10 +278,23 @@ func (h *ApiHandler) CreateMessage(c *gin.Context) {
 	metadata := shared.MessageMetadata{
 		UserID: userID.String(),
 	}
+	mentionedUserIDs := make([]uuid.UUID, 0, len(req.MentionedUserIDs))
+	for _, idStr := range req.MentionedUserIDs {
+		id, err := uuid.Parse(idStr)
+		if err != nil {
+			c.JSON(400, gin.H{"error": "Invalid mentioned user ID: " + idStr})
+			return
+		}
+		mentionedUserIDs = append(mentionedUserIDs, id)
+	}
+
 	payloadBytes, err := json.Marshal(commandpayloads.CreateMessagePayload{
-		Content:     req.Content,
-		ChannelID:   channelID,
-		WorkspaceID: workspaceID,
+		Content:          req.Content,
+		ChannelID:        channelID,
+		WorkspaceID:      workspaceID,
+		MentionedUserIDs: mentionedUserIDs,
+		MentionChannel:   req.MentionChannel,
+		MentionHere:      req.MentionHere,
 	})
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Failed to marshal payload"})
@@ -240,12 +302,14 @@ func (h *ApiHandler) CreateMessage(c *gin.Context) {
 	}
 
 	cmd := shared.NewCommand(
+		messageID,
 		aggregateID, // AggregateID for the new message
 		shared.ActionKeyMessageSend,
 		shared.NewMessageCommandPartitionKey(channelID.String()), // Using channel ID as partition key
 		traceID,
 		metadata,
 		payloadBytes, // Payload is the marshaled JSON
+		userID,
 	)
 
 	if err := h.Producer.WriteMessage(ctx, cmd); err != nil {

@@ -25,8 +25,6 @@ CREATE TABLE user_snapshots (
     username        TEXT        NOT NULL UNIQUE,
     display_name    TEXT        NOT NULL,
     avatar_url      TEXT,
-    password_hash   TEXT        NOT NULL,
-    auth_provider   TEXT        NOT NULL,
     snap_version    INTEGER     NOT NULL,
     snap_updated_at TIMESTAMPTZ NOT NULL,
     created_at      TIMESTAMPTZ NOT NULL,

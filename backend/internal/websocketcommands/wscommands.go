@@ -9,12 +9,26 @@ import (
 
 // WsCommandAck is the typed confirmation sent from Aggregator → Hub → Client
 // after a WsCommand is processed. The frontend uses it to unblock the UI.
+
+type MessageAck interface {
+	Bytes() ([]byte, error)
+}
+
 type WsCommandAck struct {
 	WsCommandKey WsCommandKey `json:"WsCommandKey"`
 	WsCommandID  uuid.UUID    `json:"WsCommandID"`
 	Success      bool         `json:"Success"`
 	Error        string       `json:"Error,omitempty"`
 }
+
+type CommandAck struct {
+	ActionKey shared.ActionKey `json:"ActionKey"`
+	MessageID uuid.UUID        `json:"MessageID"`
+	Success   bool             `json:"Success"`
+	Error     string           `json:"Error,omitempty"`
+}
+
+func (a CommandAck) Bytes() ([]byte, error) { return json.Marshal(a) }
 
 func (a WsCommandAck) Bytes() ([]byte, error) { return json.Marshal(a) }
 

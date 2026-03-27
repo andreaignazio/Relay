@@ -87,7 +87,11 @@ func (h *Hub) RunClientConsumer(ctx context.Context, client *Client) error {
 	}
 	return clientConsumer.Run(ctx, func(ctx context.Context, msg kafka.Message) error {
 		h.LogChan <- fmt.Sprintf("[Hub] Received message for client %s: %s", client.ClientID, string(msg.Value))
-		client.send <- msg.Value
+		select {
+		case client.send <- msg.Value:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 		return nil
 	})
 }

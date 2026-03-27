@@ -13,13 +13,12 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
 			return
 		}
-		UserID, err := uuid.Parse(userIDStr)
-		if err != nil {
+		if _, err := uuid.Parse(userIDStr); err != nil {
 			c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})
 			return
 		}
 
-		c.Set("UserID", UserID)
+		c.Set("UserID", userIDStr)
 		c.Next()
 	}
 }

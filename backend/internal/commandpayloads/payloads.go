@@ -18,9 +18,12 @@ type CreateChannelPayload struct {
 }
 
 type CreateMessagePayload struct {
-	WorkspaceID uuid.UUID `json:"workspaceId"`
-	ChannelID   uuid.UUID `json:"channelId"`
-	Content     string    `json:"content"`
+	WorkspaceID      uuid.UUID   `json:"workspaceId"`
+	ChannelID        uuid.UUID   `json:"channelId"`
+	Content          string      `json:"content"`
+	MentionedUserIDs []uuid.UUID `json:"mentionedUserIds,omitempty"`
+	MentionChannel   bool        `json:"mentionChannel,omitempty"`
+	MentionHere      bool        `json:"mentionHere,omitempty"`
 }
 
 type CreateDMPayload struct {
@@ -33,4 +36,11 @@ type ReplyToMessagePayload struct {
 	ChannelID       uuid.UUID `json:"channelId"`
 	ParentMessageID uuid.UUID `json:"parentMessageId"`
 	Content         string    `json:"content"`
+}
+
+type RegisterUserPayload struct {
+	IdentityID  uuid.UUID `json:"identityId"`
+	Email       string    `json:"email"`
+	DisplayName string    `json:"displayName"`
+	Username    string    `json:"username"`
 }

@@ -7,6 +7,7 @@ import (
 	"gokafka/internal/api"
 	"gokafka/internal/commandservices/channels"
 	"gokafka/internal/commandservices/messages"
+	"gokafka/internal/commandservices/users"
 	"gokafka/internal/gormrepo"
 	"gokafka/internal/kafkaclient/consumer"
 	"gokafka/internal/kafkaclient/producer"
@@ -107,12 +108,14 @@ func main() {
 	workspaceService := workspaces.NewService(gormRepository, gormRepository, gormRepository, eventProducer, logChan)
 	channelService := channels.NewService(gormRepository, gormRepository, gormRepository, eventProducer, logChan)
 	messageService := messages.NewService(gormRepository, gormRepository, gormRepository, eventProducer, logChan)
+	userService := users.NewService(gormRepository, gormRepository, gormRepository, eventProducer, logChan)
 
 	commandRouter := messagerouter.NewCommandRouter()
 	commandRouter.RegisterHandler(shared.ActionKeyWorkspaceCreate, workspaceService.HandleCreateWorkspace)
 	commandRouter.RegisterHandler(shared.ActionKeyChannelCreate, channelService.HandleCreateChannel)
 	commandRouter.RegisterHandler(shared.ActionKeyDMCreate, channelService.HandleCreateDM)
 	commandRouter.RegisterHandler(shared.ActionKeyMessageSend, messageService.HandleCreateMessage)
+	commandRouter.RegisterHandler(shared.ActionKeyUserRegister, userService.HandleUserRegisteredEvent)
 
 	//Real-time event handlers initialization
 	rtEventsHandler := rteventshandler.NewHandler(logChan, workspaceTopicProducer, channelTopicProducer, userTopicProducer, gormRepository)
@@ -155,7 +158,8 @@ func main() {
 	apiHandler := api.NewHandler(domainCommandProducer)
 	readerApiHandler := api.NewReaderHandler(gormRepository, gormRepository)
 	wsHandler := api.NewWsHandler(wsHub, conn, shared.WebSocketClientsConsumerGroupId, logChan, ctx)
-	server := api.NewRouter(apiHandler, readerApiHandler, wsHandler)
+	authHandler := api.NewAuthHandler(domainCommandProducer)
+	server := api.NewRouter(apiHandler, readerApiHandler, wsHandler, authHandler)
 
 	for groupId, consumers := range consumersByGroupId {
 		router := routerByConsumerGroupId[groupId]

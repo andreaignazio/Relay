@@ -10,12 +10,15 @@ import (
 
 // RTRichPayload — payload completo per update immediato della UI
 type RTRichPayload struct {
-	MessageID       uuid.UUID  `json:"MessageId"`
-	ChannelID       uuid.UUID  `json:"ChannelId"`
-	ParentMessageID *uuid.UUID `json:"ParentMessageId,omitempty"`
-	Content         string     `json:"Content"`
-	Author          RTAuthor   `json:"Author"`
-	CreatedAt       time.Time  `json:"CreatedAt"`
+	MessageID        uuid.UUID   `json:"MessageId"`
+	ChannelID        uuid.UUID   `json:"ChannelId"`
+	ParentMessageID  *uuid.UUID  `json:"ParentMessageId,omitempty"`
+	Content          string      `json:"Content"`
+	Author           RTAuthor    `json:"Author"`
+	CreatedAt        time.Time   `json:"CreatedAt"`
+	MentionedUserIDs []uuid.UUID `json:"MentionedUserIds,omitempty"`
+	MentionChannel   bool        `json:"MentionChannel,omitempty"`
+	MentionHere      bool        `json:"MentionHere,omitempty"`
 }
 
 type RTAuthor struct {

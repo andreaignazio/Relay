@@ -152,6 +152,7 @@ func (s *Service) HandleCreateChannel(ctx context.Context, cmd shared.Command) e
 			shared.EntityKeysUser:      {userID},
 		},
 		domainPayloadBytes,
+		cmd.GetAuthorID(),
 	)
 
 	if err := s.ProduceEvent(ctx, event); err != nil {
@@ -256,6 +257,7 @@ func (s *Service) HandleCreateDM(ctx context.Context, cmd shared.Command) error 
 			shared.EntityKeysUser:      payload.ParticipantIDs,
 		},
 		domainPayloadBytes,
+		cmd.GetAuthorID(),
 	)
 
 	if err := s.ProduceEvent(ctx, event); err != nil {

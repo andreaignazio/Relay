@@ -18,3 +18,57 @@ services:
       KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
     ports:
       - "9092:9092"
+
+  kratos-db:
+    image: postgres:16
+    container_name: kratos-db
+    environment:
+      POSTGRES_USER: kratos
+      POSTGRES_PASSWORD: kratos
+      POSTGRES_DB: kratos
+    ports:
+      - "5433:5432"
+    volumes:
+      - kratos-db-data:/var/lib/postgresql/data
+
+  kratos-migrate:
+    image: oryd/kratos:v1.3.1
+    container_name: kratos-migrate
+    depends_on:
+      - kratos-db
+    environment:
+      DSN: postgres://kratos:kratos@kratos-db:5432/kratos?sslmode=disable
+    volumes:
+      - ./ory/kratos:/etc/config/kratos
+    command: migrate sql -e --yes --config /etc/config/kratos/kratos.yml
+
+  kratos:
+    image: oryd/kratos:v1.3.1
+    container_name: kratos
+    depends_on:
+      kratos-migrate:
+        condition: service_completed_successfully
+    environment:
+      DSN: postgres://kratos:kratos@kratos-db:5432/kratos?sslmode=disable
+    volumes:
+      - ./ory/kratos:/etc/config/kratos
+    command: serve --config /etc/config/kratos/kratos.yml --dev --watch-courier
+    ports:
+      - "4433:4433"
+      - "4434:4434"
+  oathkeeper:
+    image: oryd/oathkeeper:v0.40.8
+    container_name: oathkeeper
+    depends_on:
+      - kratos
+    volumes:
+      - ./ory/oathkeeper:/etc/config/oathkeeper
+    command: serve --config /etc/config/oathkeeper/oathkeeper.yml
+    ports:
+      - "4455:4455" # proxy (il frontend chiama qui)
+      - "4456:4456" # API admin
+
+volumes:
+  kratos-db-data:
+
+

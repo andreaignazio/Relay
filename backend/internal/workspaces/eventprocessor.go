@@ -126,6 +126,7 @@ func (s *Service) HandleCreateWorkspace(ctx context.Context, command shared.Comm
 			shared.EntityKeysUser:      {userID},
 		},
 		domainPayloadBytes,
+		command.GetAuthorID(),
 	)
 
 	if err := s.ProduceEvent(ctx, event); err != nil {

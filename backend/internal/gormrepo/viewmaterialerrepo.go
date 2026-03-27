@@ -50,6 +50,18 @@ func (r *Repository) BrowseChannelsViews(ctx context.Context, workspaceID uuid.U
 	return views, err
 }
 
+func (r *Repository) GetWorkspaceMemberViews(ctx context.Context, workspaceID uuid.UUID) ([]materializedviews.WorkspaceView, error) {
+	var views []materializedviews.WorkspaceView
+	err := r.db.WithContext(ctx).Where("workspace_id = ?", workspaceID).Find(&views).Error
+	return views, err
+}
+
+func (r *Repository) GetChannelMemberViews(ctx context.Context, channelID uuid.UUID) ([]materializedviews.ChannelMembershipView, error) {
+	var views []materializedviews.ChannelMembershipView
+	err := r.db.WithContext(ctx).Where("channel_id = ?", channelID).Find(&views).Error
+	return views, err
+}
+
 func (r *Repository) GetUserDirectMessagesViews(ctx context.Context, workspaceID uuid.UUID, userID uuid.UUID) ([]materializedviews.DirectMessageMembershipView, error) {
 	var views []materializedviews.DirectMessageMembershipView
 	err := r.db.WithContext(ctx).Raw(

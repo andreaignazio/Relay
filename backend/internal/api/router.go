@@ -3,41 +3,46 @@ package api
 import (
 	"gokafka/internal/api/middleware"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-func NewRouter(handler *ApiHandler, reader *ReaderApiHandler, wsHandler *WsHandler) *gin.Engine {
+func NewRouter(handler *ApiHandler, reader *ReaderApiHandler, wsHandler *WsHandler, authHandler *AuthHandler) *gin.Engine {
 
 	r := gin.Default()
 
-	r.Use(cors.New(cors.Config{
+	hooks := r.Group("/api/hooks")
+	hooks.POST("/registration", authHandler.HandleKratosRegistrationHook)
 
-		//AllowOrigins:     []string{"https://*.vercel.app", "http://localhost:5173", "http://127.0.0.1:5173"},
-		AllowWildcard:    true,
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "x-userID", "x-correlationID", "x-correlation-id"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		AllowWebSockets:  true,
-		AllowAllOrigins:  true,
-	}))
-
-	api := r.Group("/api/", middleware.TestAuthMiddleware(), middleware.TraceIDMiddleware())
-
-	api.POST("/workspaces", handler.CreateWorkspace)
-	api.GET("/workspaces", reader.ListUserWorkspaces)
+	api := r.Group("/api/", middleware.AuthMiddleware(), middleware.TraceIDMiddleware())
 	api.GET("/ws", wsHandler.ServeWebsocket)
+
+	api.GET("/workspaces", reader.ListUserWorkspaces)
+
+	commands := api.Group("", middleware.AsyncEnvelope())
+
+	commands.POST("/workspaces", handler.CreateWorkspace)
+
+	api.POST("/users/batch", reader.BatchGetUsers)
+
 	workspaces := api.Group("/workspaces/:workspaceID")
-	workspaces.POST("/channels", handler.CreateChannel)
+
+	workspaces.GET("/members", reader.ListWorkspaceMembers)
+	workspaces.GET("/members/ids", reader.ListWorkspaceMemberIDs)
+
+	workspaceCommands := workspaces.Group("", middleware.AsyncEnvelope())
+	workspaceCommands.POST("/channels", handler.CreateChannel)
+	workspaceCommands.POST("/dms", handler.CreateDM)
+
 	workspaces.GET("/channels", reader.ListUserChannels)
-	workspaces.POST("/dms", handler.CreateDM)
 	workspaces.GET("/directmessages", reader.ListUserDirectMessages)
 	workspaces.GET("/browsechannels", reader.BrowseChannels)
 
 	channels := workspaces.Group("/channels/:channelID")
-	channels.POST("/messages", handler.CreateMessage)
+	channelCommands := channels.Group("", middleware.AsyncEnvelope())
+	channelCommands.POST("/messages", handler.CreateMessage)
+
 	channels.GET("/messages", reader.ListChannelMessages)
+	channels.GET("/members/ids", reader.ListChannelMemberIDs)
 
 	return r
 }

@@ -129,25 +129,26 @@ func (c *Client) forwardToAggregator(raw []byte) error {
 
 func (c *Client) WritePump() {
 	for {
-		message, ok := <-c.send
-		if !ok {
+		select {
+		case message := <-c.send:
+			if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				c.LogChan <- "[Client WritePump] Error writing message: " + err.Error()
+				return
+			}
+			c.LogChan <- fmt.Sprintf("[Client WritePump] Sent message to client %s: %s", c.ClientID, string(message))
+		case <-c.ctx.Done():
 			c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 			return
-		}
-		//c.Conn.WriteMessage(websocket.TextMessage, message)
-		if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-			c.LogChan <- "[Client WritePump]Error writing message: " + err.Error()
-		} else {
-			c.LogChan <- fmt.Sprintf("[Client WritePump] Sent message to client %s: %s", c.ClientID, string(message))
 		}
 	}
 }
 
 func (c *Client) Close() {
-	close(c.send)
 	c.Conn.Close()
 	if c.Consumer != nil {
 		c.Consumer.Close()
 	}
-	topics.DeleteTopic(c.Topic, c.kafkaConn.Conn)
+	if err := topics.DeleteTopic(c.Topic, c.kafkaConn.Conn); err != nil {
+		c.LogChan <- fmt.Sprintf("[Client Close] Error deleting topic %s: %s", c.Topic.Name, err.Error())
+	}
 }

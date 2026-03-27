@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gokafka/internal/kafkaclient/producer"
 	"gokafka/internal/shared"
+	"gokafka/internal/websocketcommands"
 )
 
 type Handler struct {
@@ -72,6 +73,29 @@ func (h *Handler) HandleEvent(ctx context.Context, event shared.Event) error {
 			}
 		}
 	}
+
+	commandAck := websocketcommands.CommandAck{
+		ActionKey: event.GetActionKey(),
+		MessageID: event.GetMessageID(),
+		Success:   true,
+	}
+	commandAckBytes, err := commandAck.Bytes()
+	if err != nil {
+		return fmt.Errorf("marshal command ack: %w", err)
+	}
+	ackEvent := shared.RTEvent{
+		MessageID:    event.GetMessageID(),
+		AggregateID:  event.GetAggregateID(),
+		ActionKey:    event.GetActionKey(),
+		Type:         shared.RTEventTypeCommandAck,
+		PartitionKey: shared.NewUserRealTimePartitionKey(event.GetAuthorID().String()),
+		Payload:      commandAckBytes,
+	}
+
+	if err := h.producerForTopic(shared.RealTimeDestinationUsers).WriteMessage(ctx, ackEvent); err != nil {
+		return fmt.Errorf("write command ack event: %w", err)
+	}
+	h.logChan <- fmt.Sprintf("[RTHandler] Successfully processed event and sent command ack for ActionKey: %s to user: %s", event.GetActionKey(), event.GetAuthorID())
 
 	return nil
 }

@@ -58,11 +58,14 @@ func (h *Handler) buildMessageRichPayload(ctx context.Context, event shared.Even
 	}
 
 	payload := RTRichPayload{
-		MessageID:       msg.ID,
-		ChannelID:       msg.ChannelID,
-		ParentMessageID: msg.ParentMessageID,
-		Content:         msg.Content,
-		CreatedAt:       msg.CreatedAt,
+		MessageID:        msg.ID,
+		ChannelID:        msg.ChannelID,
+		ParentMessageID:  msg.ParentMessageID,
+		Content:          msg.Content,
+		CreatedAt:        msg.CreatedAt,
+		MentionedUserIDs: msg.MentionedUserIDs,
+		MentionChannel:   msg.MentionChannel,
+		MentionHere:      msg.MentionHere,
 		Author: RTAuthor{
 			UserID:      user.ID,
 			DisplayName: user.DisplayName,

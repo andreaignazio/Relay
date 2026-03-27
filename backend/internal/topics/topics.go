@@ -31,20 +31,17 @@ func CreateTopic(topic shared.Topic, conn *kafka.Conn) error {
 	return err
 }
 
-func DeleteTopic(topic shared.Topic, conn *kafka.Conn) {
+func DeleteTopic(topic shared.Topic, conn *kafka.Conn) error {
 	controller, err := conn.Controller()
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
 	controllerConn, err := kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 	defer controllerConn.Close()
 
-	err = controllerConn.DeleteTopics(topic.Name)
-	if err != nil {
-		panic(err.Error())
-	}
+	return controllerConn.DeleteTopics(topic.Name)
 }

@@ -22,3 +22,7 @@ type DMCreatedPayload struct {
 	Channel     models.ChannelSnapshot
 	Memberships []models.ChannelMembershipSnapshot
 }
+
+type UserRegisteredPayload struct {
+	User models.UserSnapshot
+}

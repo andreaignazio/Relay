@@ -96,6 +96,12 @@ func (r *Repository) UpsertMessageSnapshotTX(ctx context.Context, snapshot model
 	}).Create(&snapshot).Error
 }
 
+func (r *Repository) GetUserSnapshotsByIDs(ctx context.Context, userIDs []uuid.UUID) ([]models.UserSnapshot, error) {
+	var snapshots []models.UserSnapshot
+	err := r.db.WithContext(ctx).Where("id IN (?)", userIDs).Find(&snapshots).Error
+	return snapshots, err
+}
+
 func (r *Repository) FindExistingDMChannel(ctx context.Context, workspaceID uuid.UUID, participantIDs []uuid.UUID) (uuid.UUID, bool, error) {
 	var channelID uuid.UUID
 	err := r.db.WithContext(ctx).Raw(`
@@ -128,6 +134,20 @@ func (r *Repository) FindExistingDMChannel(ctx context.Context, workspaceID uuid
 		return uuid.Nil, false, nil
 	}
 	return channelID, true, nil
+}
+
+func (r *Repository) UpsertUserSnapshotTX(ctx context.Context, snapshot models.UserSnapshot) error {
+	return r.dbFromCtx(ctx).Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&snapshot).Error
+}
+
+func (r *Repository) CheckUsernameExists(ctx context.Context, username string) (bool, error) {
+	var count int64
+	if err := r.db.WithContext(ctx).Model(&models.UserSnapshot{}).Where("username = ?", username).Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (r *Repository) CheckWorkspaceSlugExists(ctx context.Context, slug string) (bool, error) {

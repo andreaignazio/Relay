@@ -19,12 +19,13 @@ type KafkaDomainMessage interface {
 }
 
 type Event struct {
-	MessageID     uuid.UUID          `json:"MessageID"`
-	AggregateID   uuid.UUID          `json:"AggregateID"`
-	ActionKey     ActionKey          `json:"ActionKey"`
-	PartitionKey  EventPartitionKey  `json:"-"`
+	MessageID     uuid.UUID                  `json:"MessageID"`
+	AggregateID   uuid.UUID                  `json:"AggregateID"`
+	ActionKey     ActionKey                  `json:"ActionKey"`
+	AuthorID      uuid.UUID                  `json:"AuthorID"`
+	PartitionKey  EventPartitionKey          `json:"-"`
 	EntityContext map[EntityKeys][]uuid.UUID `json:"EntityContext,omitempty"`
-	Payload       json.RawMessage    `json:"Payload,omitempty"`
+	Payload       json.RawMessage            `json:"Payload,omitempty"`
 }
 
 func (e Event) Bytes() ([]byte, error) {
@@ -55,6 +56,10 @@ func (e Event) GetMessageID() uuid.UUID {
 	return e.MessageID
 }
 
+func (e Event) GetAuthorID() uuid.UUID {
+	return e.AuthorID
+}
+
 func NewEvent(
 	messageID uuid.UUID,
 	aggregateID uuid.UUID,
@@ -62,6 +67,7 @@ func NewEvent(
 	partitionKey EventPartitionKey,
 	entityContext map[EntityKeys][]uuid.UUID,
 	payload json.RawMessage,
+	authorID uuid.UUID,
 ) Event {
 	return Event{
 		MessageID:     messageID,
@@ -70,6 +76,7 @@ func NewEvent(
 		PartitionKey:  partitionKey,
 		EntityContext: entityContext,
 		Payload:       payload,
+		AuthorID:      authorID,
 	}
 }
 
@@ -77,6 +84,7 @@ type Command struct {
 	MessageID    uuid.UUID           `json:"MessageID"`
 	AggregateID  uuid.UUID           `json:"AggregateID"`
 	ActionKey    ActionKey           `json:"ActionKey"`
+	AuthorID     uuid.UUID           `json:"AuthorID"`
 	PartitionKey CommandPartitionKey `json:"-"`
 	TraceID      uuid.UUID           `json:"TraceID"`
 	Metadata     MessageMetadata     `json:"Metadata"`
@@ -116,20 +124,28 @@ func (c Command) GetMessageID() uuid.UUID {
 	return c.MessageID
 }
 
+func (c Command) GetAuthorID() uuid.UUID {
+	return c.AuthorID
+}
+
 func NewCommand(
+	messageID uuid.UUID,
 	aggregateID uuid.UUID,
 	actionKey ActionKey,
 	partitionKey CommandPartitionKey,
 	traceID uuid.UUID,
 	metadata MessageMetadata,
-	payload json.RawMessage) Command {
+	payload json.RawMessage,
+	authorID uuid.UUID,
+) Command {
 	return Command{
-		MessageID:    uuid.New(),
+		MessageID:    messageID,
 		AggregateID:  aggregateID,
 		ActionKey:    actionKey,
 		PartitionKey: partitionKey,
 		TraceID:      traceID,
 		Metadata:     metadata,
 		Payload:      payload,
+		AuthorID:     authorID,
 	}
 }

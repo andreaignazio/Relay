@@ -1,0 +1,83 @@
+version: v1.3.1
+
+dsn: memory # sovrascritto da env var DSN nel Docker Compose
+
+serve:
+  public:
+    base_url: http://localhost:4433/
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:5173
+      allowed_methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - PATCH
+      allowed_headers:
+        - Content-Type
+        - Authorization
+        - Cookie
+        - X-Session-Token
+      exposed_headers:
+        - Set-Cookie
+      allow_credentials: true
+  admin:
+    base_url: http://localhost:4434/
+
+selfservice:
+  default_browser_return_url: http://localhost:5173/
+
+  methods:
+    password:
+      enabled: true
+
+  flows:
+    registration:
+      ui_url: http://localhost:5173/auth/register
+      after:
+        password:
+          hooks:
+            - hook: session  # auto-login dopo registrazione
+            - hook: web_hook
+              config:
+                url: http://host.docker.internal:8080/api/hooks/registration
+                method: POST
+                body: file:///etc/config/kratos/webhook-body.jsonnet
+                auth:
+                  type: api_key
+                  config:
+                    name: X-Webhook-Secret
+                    value: relay-webhook-secret-change-me
+                    in: header
+
+    login:
+      ui_url: http://localhost:5173/auth/login
+
+    logout:
+      after:
+        default_browser_return_url: http://localhost:5173/auth/login
+
+    verification:
+      enabled: false  # MVP: disabilitato
+
+    recovery:
+      enabled: false  # MVP: disabilitato
+
+identity:
+  default_schema_id: relay-user
+  schemas:
+    - id: relay-user
+      url: file:///etc/config/kratos/identity.schema.json
+
+log:
+  level: info
+  format: text
+
+session:
+  cookie:
+    name: ory_kratos_session
+    same_site: Lax
+    domain: localhost
+  lifespan: 24h

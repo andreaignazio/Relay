@@ -13,6 +13,7 @@ const (
 	RTEventTypeRich            RTEventType = "rich"
 	RTEventTypeInvalidateCache RTEventType = "invalidate_cache"
 	RTEventTypeHint            RTEventType = "hint"
+	RTEventTypeCommandAck      RTEventType = "command_ack"
 )
 
 type RTEvent struct {

@@ -1,0 +1,49 @@
+{
+    "$id": "https://relay.local/identity.schema.json",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Relay User",
+    "type": "object",
+    "properties": {
+        "traits": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "format": "email",
+                    "ory.sh/kratos": {
+                        "credentials": {
+                            "password": {
+                                "identifier": true
+                            }
+                        },
+                        "verification": {
+                            "via": "email"
+                        },
+                        "recovery": {
+                            "via": "email"
+                        }
+                    }
+                },
+                "display_name": {
+                    "type": "string",
+                    "title": "Display Name",
+                    "minLength": 1,
+                    "maxLength": 100
+                },
+                "username": {
+                    "type": "string",
+                    "title": "Username",
+                    "minLength": 3,
+                    "maxLength": 30,
+                    "pattern": "^[a-z0-9._-]+$"
+                }
+            },
+            "required": [
+                "email",
+                "display_name",
+                "username"
+            ],
+            "additionalProperties": false
+        }
+    }
+}

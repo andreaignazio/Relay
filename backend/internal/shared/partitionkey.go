@@ -151,6 +151,10 @@ func parseEventPartitionKey(parts []string) EventPartitionKey {
 	switch EntityKeys(prefix) {
 	case EntityKeysWorkspace:
 		return NewWorkspaceEventPartitionKey(id)
+	case EntityKeysUser:
+		return NewUserEventPartitionKey(id)
+	case EntityKeysChannel:
+		return NewMessageEventPartitionKey(id)
 	default:
 		panic("unknown partition key prefix: " + prefix)
 	}
@@ -164,7 +168,10 @@ func parseCommandPartitionKey(parts []string) PartitionKey {
 		return NewWorkspaceCommandPartitionKey(id)
 	case ServicesKeysChannels:
 		return NewChannelCommandPartitionKey(id)
-
+	case ServicesKeysMessages:
+		return NewMessageCommandPartitionKey(id)
+	case ServicesKeysUsers:
+		return NewUserCommandPartitionKey(id)
 	default:
 		panic("unknown command partition key prefix: " + prefix)
 	}
@@ -223,6 +230,22 @@ func NewMessageCommandPartitionKey(channelID string) CommandPartitionKey {
 		Kind:         PartitionKeyKindCommand,
 		ServicesKeys: ServicesKeysMessages,
 		AggregateID:  channelID,
+	}
+}
+
+func NewUserCommandPartitionKey(userID string) CommandPartitionKey {
+	return CommandPartitionKey{
+		Kind:         PartitionKeyKindCommand,
+		ServicesKeys: ServicesKeysUsers,
+		AggregateID:  userID,
+	}
+}
+
+func NewUserEventPartitionKey(userID string) EventPartitionKey {
+	return EventPartitionKey{
+		Kind:         PartitionKeyKindEvent,
+		ParentEntity: EntityKeysUser,
+		ParentID:     userID,
 	}
 }
 

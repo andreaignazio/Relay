@@ -26,12 +26,15 @@ func (s *Service) HandleCreateMessage(ctx context.Context, cmd shared.Command) e
 		return err
 	}
 	message := entities.Message{
-		ID:         cmd.AggregateID,
-		ChannelID:  payload.ChannelID,
-		UserID:     userID,
-		Content:    payload.Content,
-		IsEdited:   false,
-		ReplyCount: 0,
+		ID:               cmd.AggregateID,
+		ChannelID:        payload.ChannelID,
+		UserID:           userID,
+		Content:          payload.Content,
+		IsEdited:         false,
+		ReplyCount:       0,
+		MentionedUserIDs: payload.MentionedUserIDs,
+		MentionChannel:   payload.MentionChannel,
+		MentionHere:      payload.MentionHere,
 		Timestamps: entities.Timestamps{
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
@@ -78,10 +81,13 @@ func (s *Service) HandleCreateMessage(ctx context.Context, cmd shared.Command) e
 	}
 
 	domainPayload := domaineventpayloads.MessageCreatedPayload{
-		WorkspaceID: payload.WorkspaceID,
-		ChannelID:   payload.ChannelID,
-		AggregateID: cmd.AggregateID,
-		UserID:      userID,
+		WorkspaceID:      payload.WorkspaceID,
+		ChannelID:        payload.ChannelID,
+		AggregateID:      cmd.AggregateID,
+		UserID:           userID,
+		MentionedUserIDs: payload.MentionedUserIDs,
+		MentionChannel:   payload.MentionChannel,
+		MentionHere:      payload.MentionHere,
 	}
 	domainPayloadBytes, err := json.Marshal(domainPayload)
 	if err != nil {
@@ -97,7 +103,9 @@ func (s *Service) HandleCreateMessage(ctx context.Context, cmd shared.Command) e
 			shared.EntityKeysChannel:   {payload.ChannelID},
 			shared.EntityKeysUser:      {userID},
 		},
-		domainPayloadBytes)
+		domainPayloadBytes,
+		cmd.GetAuthorID(),
+	)
 	if err := s.ProduceEvent(ctx, domainEvent); err != nil {
 		return err
 	}
